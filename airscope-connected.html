@@ -1,0 +1,2075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AirScope — Breathe With Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070b0f;
+    --bg2: #0d1318;
+    --bg3: #111820;
+    --surface: #141c24;
+    --surface2: #1a2430;
+    --border: rgba(255,255,255,0.06);
+    --border-accent: rgba(0,212,170,0.25);
+    --accent: #00d4aa;
+    --accent2: #00a8ff;
+    --accent3: #ff6b35;
+    --accent-glow: rgba(0,212,170,0.15);
+    --text: #e8f0f7;
+    --text2: #8fa3b4;
+    --text3: #526070;
+    --good: #00d4aa;
+    --moderate: #f5c842;
+    --unhealthy: #ff6b35;
+    --hazard: #e03450;
+    --r: 8px;
+    --r2: 16px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Animated background ── */
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridDrift 30s linear infinite;
+  }
+  @keyframes gridDrift { to { background-position: 40px 40px; } }
+
+  .bg-orb {
+    position: fixed; border-radius: 50%; filter: blur(80px);
+    pointer-events: none; z-index: 0;
+  }
+  .orb1 { width: 600px; height: 600px; top: -200px; left: -200px; background: radial-gradient(circle, rgba(0,212,170,0.06), transparent 70%); animation: orbFloat 20s ease-in-out infinite; }
+  .orb2 { width: 400px; height: 400px; bottom: -100px; right: -100px; background: radial-gradient(circle, rgba(0,168,255,0.05), transparent 70%); animation: orbFloat 25s ease-in-out infinite reverse; }
+  @keyframes orbFloat { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,-30px)} }
+
+  /* ── Layout ── */
+  .app { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ── Nav ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; height: 64px;
+    background: rgba(7,11,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800;
+    letter-spacing: -0.5px; color: var(--text);
+  }
+  .nav-logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 4px; }
+  .nav-link {
+    padding: 6px 14px; border-radius: 6px; font-size: 12px;
+    color: var(--text2); cursor: pointer; transition: all 0.2s;
+    background: none; border: none; font-family: inherit;
+  }
+  .nav-link:hover, .nav-link.active { color: var(--accent); background: var(--accent-glow); }
+  .nav-actions { display: flex; gap: 8px; align-items: center; }
+  .btn-sm {
+    padding: 7px 16px; border-radius: 6px; font-size: 12px; font-family: inherit;
+    cursor: pointer; transition: all 0.2s; font-weight: 500; border: none;
+  }
+  .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text2); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary { background: var(--accent); color: #070b0f; }
+  .btn-primary:hover { background: #00f0c0; }
+
+  /* ── Sections ── */
+  .section { display: none; padding: 32px; max-width: 1400px; margin: 0 auto; width: 100%; }
+  .section.active { display: block; }
+
+  /* ── Hero / Dashboard ── */
+  .hero-bar {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 32px; flex-wrap: wrap; gap: 16px;
+  }
+  .hero-title { font-family: 'Syne', sans-serif; font-size: 38px; font-weight: 800; line-height: 1.1; }
+  .hero-title em { font-family: 'Instrument Serif', serif; font-style: italic; color: var(--accent); font-weight: 400; }
+  .hero-sub { font-size: 12px; color: var(--text2); margin-top: 6px; }
+  .timestamp { font-size: 11px; color: var(--text3); text-align: right; }
+  .timestamp strong { color: var(--accent); font-size: 18px; font-family: 'Syne', sans-serif; display: block; }
+
+  /* ── Grid layouts ── */
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
+  .grid-main { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  .grid-main2 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r2); padding: 20px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .card:hover { border-color: var(--border-accent); box-shadow: 0 0 24px var(--accent-glow); }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .card-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); }
+  .card-badge { font-size: 10px; padding: 3px 8px; border-radius: 20px; font-weight: 500; }
+  .badge-good { background: rgba(0,212,170,0.15); color: var(--good); }
+  .badge-mod { background: rgba(245,200,66,0.15); color: var(--moderate); }
+  .badge-bad { background: rgba(255,107,53,0.15); color: var(--unhealthy); }
+
+  /* ── AQI Big Display ── */
+  .aqi-big {
+    text-align: center; padding: 20px 0;
+  }
+  .aqi-number {
+    font-family: 'Syne', sans-serif; font-size: 80px; font-weight: 800; line-height: 1;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .aqi-label { font-size: 12px; color: var(--text2); margin-top: 6px; letter-spacing: 2px; text-transform: uppercase; }
+  .aqi-status { font-size: 16px; font-family: 'Syne', sans-serif; font-weight: 700; color: var(--good); margin-top: 8px; }
+  .aqi-ring { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+  .aqi-ring svg { position: absolute; top: -10px; left: -10px; }
+
+  /* ── Pollutant bars ── */
+  .pollutant { margin-bottom: 14px; }
+  .poll-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 11px; }
+  .poll-name { color: var(--text2); }
+  .poll-val { color: var(--text); font-weight: 500; }
+  .poll-bar { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+  .poll-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+  .fill-good { background: linear-gradient(90deg, var(--good), #00f0c0); }
+  .fill-mod { background: linear-gradient(90deg, var(--moderate), #ffda60); }
+  .fill-bad { background: linear-gradient(90deg, var(--unhealthy), #ff9060); }
+
+  /* ── Weather strip ── */
+  .weather-row {
+    display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .weather-row::-webkit-scrollbar { display: none; }
+  .weather-tile {
+    flex: 0 0 auto; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 12px 16px; text-align: center; min-width: 72px;
+  }
+  .weather-tile.now { border-color: var(--border-accent); background: rgba(0,212,170,0.05); }
+  .w-time { font-size: 10px; color: var(--text3); margin-bottom: 6px; }
+  .w-icon { font-size: 22px; margin-bottom: 4px; }
+  .w-temp { font-size: 14px; font-family: 'Syne', sans-serif; font-weight: 700; }
+  .w-aqi { font-size: 10px; color: var(--accent); margin-top: 3px; }
+
+  /* ── Chart ── */
+  .chart-wrap { position: relative; height: 140px; margin-top: 8px; }
+  canvas { width: 100% !important; }
+
+  /* ── Forecast cards ── */
+  .forecast-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .forecast-row::-webkit-scrollbar { display: none; }
+  .forecast-card {
+    flex: 0 0 auto; min-width: 110px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 14px 12px; text-align: center;
+    transition: all 0.2s;
+  }
+  .forecast-card:hover { border-color: var(--border-accent); transform: translateY(-2px); }
+  .fc-day { font-size: 10px; color: var(--text3); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .fc-icon { font-size: 24px; margin-bottom: 6px; }
+  .fc-aqi { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+  .fc-label { font-size: 10px; margin-top: 3px; }
+  .fc-temp { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+  /* ── Map placeholder ── */
+  .map-area {
+    height: 320px; background: var(--surface2); border-radius: var(--r);
+    position: relative; overflow: hidden; border: 1px solid var(--border);
+  }
+  .map-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 60% 40%, rgba(0,212,170,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 20% 70%, rgba(0,168,255,0.06) 0%, transparent 50%),
+                var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .map-grid-svg { position: absolute; inset: 0; opacity: 0.2; }
+  .map-dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; cursor: pointer; transition: transform 0.2s; }
+  .map-dot:hover { transform: scale(1.6); }
+  .map-dot::after {
+    content: ''; position: absolute; inset: -4px; border-radius: 50%;
+    border: 1px solid currentColor; animation: ping 2s infinite; opacity: 0;
+  }
+  @keyframes ping { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(2.5);opacity:0} }
+  .map-dot-label {
+    position: absolute; font-size: 9px; white-space: nowrap;
+    background: rgba(7,11,15,0.9); padding: 2px 6px; border-radius: 4px;
+    transform: translateX(-50%); top: 14px; left: 50%;
+    pointer-events: none; border: 1px solid var(--border);
+  }
+  .map-search {
+    position: absolute; top: 12px; left: 12px; right: 12px;
+    display: flex; gap: 8px;
+  }
+  .map-input {
+    flex: 1; background: rgba(7,11,15,0.9); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 8px 14px; font-size: 12px;
+    color: var(--text); font-family: inherit; outline: none; transition: border-color 0.2s;
+  }
+  .map-input:focus { border-color: var(--accent); }
+  .map-btn {
+    background: var(--accent); border: none; border-radius: var(--r);
+    padding: 8px 16px; font-size: 12px; color: #070b0f; cursor: pointer;
+    font-family: inherit; font-weight: 700; white-space: nowrap;
+  }
+
+  /* ── Suggestions ── */
+  .suggestion {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 14px; margin-bottom: 10px;
+    transition: all 0.2s;
+  }
+  .suggestion:hover { border-color: var(--border-accent); }
+  .sug-icon { font-size: 20px; flex: 0 0 auto; margin-top: 1px; }
+  .sug-text h4 { font-size: 12px; font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: 3px; }
+  .sug-text p { font-size: 11px; color: var(--text2); line-height: 1.5; }
+  .sug-tag {
+    font-size: 9px; padding: 2px 7px; border-radius: 10px; margin-top: 6px; display: inline-block;
+    background: var(--accent-glow); color: var(--accent); letter-spacing: 0.5px;
+  }
+
+  /* ── Plans / Scheduler ── */
+  .plan-form { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r2); padding: 20px; margin-bottom: 20px; }
+  .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .form-field { flex: 1; min-width: 160px; }
+  .form-field label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px; }
+  .form-input {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 9px 12px; font-size: 12px; color: var(--text);
+    font-family: inherit; outline: none; transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  select.form-input option { background: var(--surface); }
+  .plan-item {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 14px 16px; margin-bottom: 10px;
+    transition: all 0.2s; cursor: pointer;
+  }
+  .plan-item:hover { border-color: var(--border-accent); }
+  .plan-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+  .plan-info { flex: 1; }
+  .plan-info h4 { font-size: 13px; font-family: 'Syne', sans-serif; font-weight: 700; }
+  .plan-info p { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .plan-meta { text-align: right; font-size: 11px; color: var(--text3); }
+  .plan-meta strong { display: block; font-size: 12px; color: var(--text2); font-family: 'Syne', sans-serif; }
+
+  /* ── Share panel ── */
+  .share-card {
+    background: linear-gradient(135deg, rgba(0,212,170,0.08), rgba(0,168,255,0.05));
+    border: 1px solid var(--border-accent); border-radius: var(--r2); padding: 24px;
+    text-align: center; margin-bottom: 20px;
+  }
+  .share-card h3 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+  .share-card p { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+  .share-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .share-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 10px 18px; cursor: pointer;
+    font-family: inherit; font-size: 12px; color: var(--text); transition: all 0.2s;
+  }
+  .share-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Settings ── */
+  .setting-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-info h4 { font-size: 13px; font-family: 'Syne', sans-serif; font-weight: 700; }
+  .setting-info p { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .toggle {
+    width: 40px; height: 22px; background: var(--surface2); border-radius: 11px;
+    position: relative; cursor: pointer; transition: background 0.3s; flex: 0 0 auto;
+    border: 1px solid var(--border);
+  }
+  .toggle.on { background: var(--accent); border-color: var(--accent); }
+  .toggle::after {
+    content: ''; position: absolute; width: 16px; height: 16px; background: white;
+    border-radius: 50%; top: 2px; left: 2px; transition: transform 0.3s;
+  }
+  .toggle.on::after { transform: translateX(18px); }
+
+  /* ── Stat tiles ── */
+  .stat-tile { text-align: center; padding: 10px; }
+  .stat-val { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; }
+  .stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
+
+  /* ── Divider / Section label ── */
+  .sec-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--text3); margin-bottom: 12px; margin-top: 24px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sec-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── Notification ── */
+  .notif {
+    position: fixed; bottom: 24px; right: 24px; z-index: 200;
+    background: var(--surface); border: 1px solid var(--accent);
+    border-radius: var(--r); padding: 14px 20px;
+    font-size: 12px; color: var(--text);
+    box-shadow: 0 8px 32px rgba(0,212,170,0.2);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 280px;
+  }
+  .notif.show { transform: translateY(0); opacity: 1; }
+  .notif strong { color: var(--accent); display: block; margin-bottom: 3px; font-family: 'Syne', sans-serif; }
+
+  /* ── Progress ring ── */
+  .ring-wrap { display: flex; align-items: center; justify-content: center; padding: 10px 0; }
+
+  /* ── Tab bar in cards ── */
+  .tab-bar { display: flex; gap: 2px; background: var(--surface2); border-radius: 8px; padding: 3px; margin-bottom: 16px; }
+  .tab {
+    flex: 1; text-align: center; padding: 7px; font-size: 11px; border-radius: 5px;
+    cursor: pointer; transition: all 0.2s; color: var(--text2); border: none; background: none; font-family: inherit;
+  }
+  .tab.active { background: var(--surface); color: var(--accent); }
+
+  /* ── Responsive ── */
+  @media (max-width: 1024px) {
+    .grid-4 { grid-template-columns: repeat(2,1fr); }
+    .grid-main { grid-template-columns: 1fr; }
+    .grid-main2 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    nav { padding: 0 16px; }
+    .nav-links { display: none; }
+    .section { padding: 16px; }
+    .grid-4, .grid-3, .grid-2, .grid-main2 { grid-template-columns: 1fr; }
+    .hero-title { font-size: 26px; }
+    .aqi-number { font-size: 60px; }
+  }
+
+  /* ── Fade in ── */
+  .fade-in { animation: fadeIn 0.4s ease both; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+  /* pulse dot */
+  .live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 5px; animation: livePulse 1.5s ease-in-out infinite; }
+  @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+
+  /* gradient text util */
+  .grad { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+  /* scrollbar global */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+
+<div class="app">
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-logo">Air<span>Scope</span></div>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="showSection('dashboard')">Dashboard</button>
+    <button class="nav-link" onclick="showSection('forecast')">Forecast</button>
+    <button class="nav-link" onclick="showSection('explore')">Explore</button>
+    <button class="nav-link" onclick="showSection('planner')">Planner</button>
+    <button class="nav-link" onclick="showSection('suggestions')">Suggestions</button>
+    <button class="nav-link" onclick="showSection('settings')">Settings</button>
+  </div>
+  <div class="nav-actions">
+    <span style="font-size:11px;color:var(--text3)"><span class="live-dot"></span>Live</span>
+    <button class="btn-sm btn-ghost" onclick="showSection('settings')">⚙ Settings</button>
+    <button class="btn-sm btn-primary" onclick="showNotif('📍 Location updated!')">+ Add Location</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- DASHBOARD -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section active fade-in" id="section-dashboard">
+  <div class="hero-bar">
+    <div>
+      <div class="hero-title">Your Air,<br><em>Decoded.</em></div>
+      <div class="hero-sub">📍 Sohna, Haryana — <span class="live-dot"></span>Updated just now</div>
+    </div>
+    <div class="timestamp">
+      <strong id="clock">--:--</strong>
+      <span id="datestr">--</span>
+    </div>
+  </div>
+
+  <!-- Top stats -->
+  <div class="grid-4" style="margin-bottom:16px">
+    <div class="card" style="grid-column:span 1">
+      <div class="card-header">
+        <span class="card-title">Personal Space</span>
+        <span class="card-badge badge-good">Good</span>
+      </div>
+      <div class="aqi-big">
+        <div class="aqi-number">42</div>
+        <div class="aqi-label">AQI</div>
+        <div class="aqi-status">✓ Good</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">Indoor sensor · Room 1</div>
+    </div>
+
+    <div class="card" style="grid-column:span 1">
+      <div class="card-header">
+        <span class="card-title">Local Area</span>
+        <span class="card-badge badge-mod">Moderate</span>
+      </div>
+      <div class="aqi-big">
+        <div class="aqi-number" style="background:linear-gradient(135deg,var(--moderate),#ffda60);-webkit-background-clip:text;-webkit-text-fill-color:transparent">87</div>
+        <div class="aqi-label">AQI</div>
+        <div class="aqi-status" style="color:var(--moderate)">⚠ Moderate</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">Sohna, Haryana</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Weather Now</span></div>
+      <div style="text-align:center;padding:10px 0">
+        <div style="font-size:42px">🌤</div>
+        <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;margin-top:4px">27°C</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">Partly Cloudy · 58% Humidity</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Wind: 12 km/h NW</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Health Alert</span></div>
+      <div style="padding:8px 0">
+        <div class="suggestion" style="margin-bottom:8px">
+          <div class="sug-icon">😷</div>
+          <div class="sug-text">
+            <h4>Outdoor activity OK</h4>
+            <p>Air quality is acceptable for outdoor activities. Sensitive groups should watch for symptoms.</p>
+          </div>
+        </div>
+        <div class="suggestion" style="background:rgba(245,200,66,0.05);border-color:rgba(245,200,66,0.2)">
+          <div class="sug-icon">🌿</div>
+          <div class="sug-text">
+            <h4>PM2.5 slightly elevated</h4>
+            <p>Consider wearing N95 if exercising outdoors for extended periods.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main area -->
+  <div class="grid-main" style="margin-bottom:16px">
+    <!-- Chart card -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">24-Hour AQI Trend</span>
+        <div class="tab-bar" style="width:220px;margin-bottom:0">
+          <button class="tab active">AQI</button>
+          <button class="tab" onclick="switchChart('pm25')">PM2.5</button>
+          <button class="tab" onclick="switchChart('pm10')">PM10</button>
+          <button class="tab" onclick="switchChart('co2')">CO₂</button>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Pollutants -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Pollutants</span><span style="font-size:10px;color:var(--text3)">µg/m³</span></div>
+      <div class="pollutant">
+        <div class="poll-row"><span class="poll-name">PM2.5</span><span class="poll-val">18.4</span></div>
+        <div class="poll-bar"><div class="poll-fill fill-good" style="width:37%"></div></div>
+      </div>
+      <div class="pollutant">
+        <div class="poll-row"><span class="poll-name">PM10</span><span class="poll-val">42.1</span></div>
+        <div class="poll-bar"><div class="poll-fill fill-mod" style="width:55%"></div></div>
+      </div>
+      <div class="pollutant">
+        <div class="poll-row"><span class="poll-name">NO₂</span><span class="poll-val">29.7</span></div>
+        <div class="poll-bar"><div class="poll-fill fill-good" style="width:30%"></div></div>
+      </div>
+      <div class="pollutant">
+        <div class="poll-row"><span class="poll-name">O₃</span><span class="poll-val">61.2</span></div>
+        <div class="poll-bar"><div class="poll-fill fill-mod" style="width:61%"></div></div>
+      </div>
+      <div class="pollutant">
+        <div class="poll-row"><span class="poll-name">SO₂</span><span class="poll-val">8.9</span></div>
+        <div class="poll-bar"><div class="poll-fill fill-good" style="width:22%"></div></div>
+      </div>
+      <div class="pollutant">
+        <div class="poll-row"><span class="poll-name">CO</span><span class="poll-val">0.6</span></div>
+        <div class="poll-bar"><div class="poll-fill fill-good" style="width:18%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hourly weather -->
+  <div class="sec-label">Hourly Forecast</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="weather-row" id="hourlyRow"></div>
+  </div>
+
+  <!-- Comparison grid -->
+  <div class="sec-label">Nearby Stations</div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Gurgaon</span><span class="card-badge badge-mod">Moderate</span></div>
+      <div style="display:flex;align-items:center;gap:16px;padding:8px 0">
+        <div style="font-family:'Syne',sans-serif;font-size:44px;font-weight:800;color:var(--moderate)">94</div>
+        <div>
+          <div style="font-size:11px;color:var(--text2)">PM2.5: 24.6 µg/m³</div>
+          <div style="font-size:11px;color:var(--text2)">Temp: 29°C · 62% RH</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">12.4 km away</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Faridabad</span><span class="card-badge badge-bad">Unhealthy (SG)</span></div>
+      <div style="display:flex;align-items:center;gap:16px;padding:8px 0">
+        <div style="font-family:'Syne',sans-serif;font-size:44px;font-weight:800;color:var(--unhealthy)">138</div>
+        <div>
+          <div style="font-size:11px;color:var(--text2)">PM2.5: 51.2 µg/m³</div>
+          <div style="font-size:11px;color:var(--text2)">Temp: 31°C · 68% RH</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">22.1 km away</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Palwal</span><span class="card-badge badge-good">Good</span></div>
+      <div style="display:flex;align-items:center;gap:16px;padding:8px 0">
+        <div style="font-family:'Syne',sans-serif;font-size:44px;font-weight:800;color:var(--good)">56</div>
+        <div>
+          <div style="font-size:11px;color:var(--text2)">PM2.5: 14.1 µg/m³</div>
+          <div style="font-size:11px;color:var(--text2)">Temp: 26°C · 55% RH</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">18.7 km away</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- FORECAST -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section fade-in" id="section-forecast">
+  <div class="hero-bar">
+    <div>
+      <div class="hero-title">AI-Powered <em>Forecast</em></div>
+      <div class="hero-sub">Prediction based on AQI parameters, weather patterns & historical data</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-sm btn-ghost">7 Days</button>
+      <button class="btn-sm btn-primary">14 Days</button>
+    </div>
+  </div>
+
+  <!-- AI Prediction Banner -->
+  <div style="background:linear-gradient(135deg,rgba(0,212,170,0.08),rgba(0,168,255,0.05));border:1px solid var(--border-accent);border-radius:var(--r2);padding:20px;margin-bottom:20px;display:flex;align-items:center;gap:20px">
+    <div style="font-size:36px">🧠</div>
+    <div style="flex:1">
+      <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;margin-bottom:4px">AI Prediction Model Active</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">Analyzing: PM2.5 trends · NO₂ emissions · Wind patterns · Temperature inversions · Historical seasonality · Traffic density · Industrial activity</div>
+    </div>
+    <div style="text-align:right;flex:0 0 auto">
+      <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--accent)">91%</div>
+      <div style="font-size:10px;color:var(--text3)">Accuracy</div>
+    </div>
+  </div>
+
+  <!-- 7-day forecast -->
+  <div class="sec-label">7-Day AQI Forecast</div>
+  <div class="forecast-row" id="forecastRow"></div>
+
+  <!-- Forecast chart -->
+  <div class="card" style="margin-top:16px;margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">14-Day Combined Forecast</span>
+      <div style="display:flex;gap:12px;font-size:10px">
+        <span style="color:var(--accent)">━ AQI</span>
+        <span style="color:var(--accent2)">━ Temperature</span>
+        <span style="color:var(--moderate)">━ Humidity</span>
+      </div>
+    </div>
+    <div class="chart-wrap" style="height:180px">
+      <canvas id="forecastChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Weather & AQI correlation -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Key Drivers This Week</span></div>
+      <div class="suggestion">
+        <div class="sug-icon">💨</div>
+        <div class="sug-text">
+          <h4>Wind shift expected — Fri</h4>
+          <p>NW winds turning SE on Friday may bring pollutants from industrial zones. AQI predicted to rise 20–35 points.</p>
+          <span class="sug-tag">HIGH IMPACT</span>
+        </div>
+      </div>
+      <div class="suggestion">
+        <div class="sug-icon">🌧</div>
+        <div class="sug-text">
+          <h4>Rain on Sunday clears air</h4>
+          <p>Forecasted 8mm rainfall will likely bring AQI down to 30–45 range. Best outdoor window: Sunday afternoon.</p>
+          <span class="sug-tag">OPPORTUNITY</span>
+        </div>
+      </div>
+      <div class="suggestion">
+        <div class="sug-icon">🏭</div>
+        <div class="sug-text">
+          <h4>Temperature inversion risk</h4>
+          <p>Low overnight temps Wed–Thu may trap pollutants. Morning AQI could spike to 120+.</p>
+          <span class="sug-tag">RISK</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Best Times to Be Outdoors</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:4px 0">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.2);border-radius:var(--r)">
+          <span style="font-size:12px">🌅 Today 06:00–09:00</span>
+          <span style="font-size:11px;color:var(--good);font-family:'Syne',sans-serif;font-weight:700">AQI ~38</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.2);border-radius:var(--r)">
+          <span style="font-size:12px">🌤 Tomorrow 07:00–10:00</span>
+          <span style="font-size:11px;color:var(--good);font-family:'Syne',sans-serif;font-weight:700">AQI ~44</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:var(--r)">
+          <span style="font-size:12px">☁ Wed evening 17:00–19:00</span>
+          <span style="font-size:11px;color:var(--moderate);font-family:'Syne',sans-serif;font-weight:700">AQI ~78</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.2);border-radius:var(--r)">
+          <span style="font-size:12px">🌦 Sunday 14:00–18:00</span>
+          <span style="font-size:11px;color:var(--good);font-family:'Syne',sans-serif;font-weight:700">AQI ~32</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(255,107,53,0.05);border:1px solid rgba(255,107,53,0.2);border-radius:var(--r)">
+          <span style="font-size:12px">🌫 Wed–Thu Morning</span>
+          <span style="font-size:11px;color:var(--unhealthy);font-family:'Syne',sans-serif;font-weight:700">AQI ~124 ⚠</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- EXPLORE -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section fade-in" id="section-explore">
+  <div class="hero-bar">
+    <div>
+      <div class="hero-title">Explore <em>Anywhere</em></div>
+      <div class="hero-sub">Search any city or geographic location to view its air quality</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="map-area">
+      <div class="map-bg">
+        <!-- Simple SVG map grid -->
+        <svg class="map-grid-svg" viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%">
+          <defs><pattern id="mg" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,212,170,0.3)" stroke-width=".5"/></pattern></defs>
+          <rect width="800" height="320" fill="url(#mg)"/>
+          <!-- Simplified India coastline shapes -->
+          <ellipse cx="400" cy="160" rx="180" ry="120" fill="rgba(0,212,170,0.04)" stroke="rgba(0,212,170,0.15)" stroke-width="1"/>
+          <ellipse cx="400" cy="160" rx="140" ry="90" fill="rgba(0,212,170,0.03)" stroke="none"/>
+        </svg>
+        <!-- Location dots -->
+        <div style="position:absolute;top:90px;left:52%;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);cursor:pointer" title="Sohna (Your Location)">
+          <div style="position:absolute;font-size:9px;white-space:nowrap;background:rgba(7,11,15,0.9);padding:2px 6px;border-radius:4px;transform:translateX(-50%);top:14px;left:50%;border:1px solid var(--border);color:var(--accent)">📍 Sohna (You) · 87</div>
+        </div>
+        <div style="position:absolute;top:75px;left:48%;width:8px;height:8px;border-radius:50%;background:var(--moderate);cursor:pointer">
+          <div style="position:absolute;font-size:9px;white-space:nowrap;background:rgba(7,11,15,0.9);padding:2px 6px;border-radius:4px;transform:translateX(-50%);top:12px;left:50%;border:1px solid var(--border)">Gurgaon · 94</div>
+        </div>
+        <div style="position:absolute;top:70px;left:46%;width:8px;height:8px;border-radius:50%;background:var(--unhealthy);cursor:pointer">
+          <div style="position:absolute;font-size:9px;white-space:nowrap;background:rgba(7,11,15,0.9);padding:2px 6px;border-radius:4px;transform:translateX(-50%);top:12px;left:50%;border:1px solid var(--border)">Delhi · 168</div>
+        </div>
+        <div style="position:absolute;top:100px;left:46%;width:8px;height:8px;border-radius:50%;background:var(--unhealthy);cursor:pointer">
+          <div style="position:absolute;font-size:9px;white-space:nowrap;background:rgba(7,11,15,0.9);padding:2px 6px;border-radius:4px;transform:translateX(-50%);top:12px;left:50%;border:1px solid var(--border)">Faridabad · 138</div>
+        </div>
+        <div style="position:absolute;top:60px;left:44%;width:7px;height:7px;border-radius:50%;background:var(--hazard);cursor:pointer">
+          <div style="position:absolute;font-size:9px;white-space:nowrap;background:rgba(7,11,15,0.9);padding:2px 6px;border-radius:4px;transform:translateX(-50%);top:11px;left:50%;border:1px solid var(--border)">Rohtak · 201</div>
+        </div>
+      </div>
+      <div class="map-search">
+        <input class="map-input" placeholder="🔍  Search city, region or coordinates…" id="mapSearch">
+        <button class="map-btn" onclick="searchLocation()">Search</button>
+      </div>
+      <div style="position:absolute;bottom:12px;right:12px;display:flex;gap:8px;font-size:10px">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block"></span>Good</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--moderate);display:inline-block"></span>Moderate</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--unhealthy);display:inline-block"></span>Unhealthy</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--hazard);display:inline-block"></span>Hazardous</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search result / Geo-detail -->
+  <div class="grid-main2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Delhi NCR</span><span class="card-badge badge-bad" style="background:rgba(224,52,80,0.15);color:var(--hazard)">Unhealthy</span></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+        <div style="font-family:'Syne',sans-serif;font-size:52px;font-weight:800;color:var(--unhealthy)">168</div>
+        <div>
+          <div style="font-size:11px;color:var(--text2)">PM2.5: 68.4 µg/m³</div>
+          <div style="font-size:11px;color:var(--text2)">Temp: 32°C | Hum: 72%</div>
+          <div style="font-size:11px;color:var(--text2)">Visibility: 4.2 km</div>
+        </div>
+      </div>
+      <div style="background:rgba(255,107,53,0.08);border:1px solid rgba(255,107,53,0.2);border-radius:6px;padding:8px;font-size:11px;color:var(--unhealthy);margin-top:4px">⚠ Avoid prolonged outdoor activities. Sensitive groups should stay indoors.</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Mumbai</span><span class="card-badge badge-good">Good</span></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+        <div style="font-family:'Syne',sans-serif;font-size:52px;font-weight:800;color:var(--good)">48</div>
+        <div>
+          <div style="font-size:11px;color:var(--text2)">PM2.5: 11.2 µg/m³</div>
+          <div style="font-size:11px;color:var(--text2)">Temp: 29°C | Hum: 81%</div>
+          <div style="font-size:11px;color:var(--text2)">Sea breeze active</div>
+        </div>
+      </div>
+      <div style="background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.2);border-radius:6px;padding:8px;font-size:11px;color:var(--good);margin-top:4px">✓ Air quality is satisfactory. Good for outdoor activities.</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Bangalore</span><span class="card-badge badge-good">Good</span></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+        <div style="font-family:'Syne',sans-serif;font-size:52px;font-weight:800;color:var(--good)">39</div>
+        <div>
+          <div style="font-size:11px;color:var(--text2)">PM2.5: 8.7 µg/m³</div>
+          <div style="font-size:11px;color:var(--text2)">Temp: 24°C | Hum: 67%</div>
+          <div style="font-size:11px;color:var(--text2)">Clear skies</div>
+        </div>
+      </div>
+      <div style="background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.2);border-radius:6px;padding:8px;font-size:11px;color:var(--good);margin-top:4px">✓ Excellent conditions. Enjoy outdoor activities freely.</div>
+    </div>
+  </div>
+
+  <div class="sec-label" style="margin-top:24px">Global Hotspots</div>
+  <div class="grid-4">
+    <div class="card" style="text-align:center;cursor:pointer" onclick="showNotif('Loading Lahore data…')">
+      <div style="font-size:24px;margin-bottom:6px">🇵🇰</div>
+      <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--hazard)">234</div>
+      <div style="font-size:12px;margin-top:3px">Lahore</div>
+      <div style="font-size:10px;color:var(--hazard);margin-top:4px">Hazardous</div>
+    </div>
+    <div class="card" style="text-align:center;cursor:pointer" onclick="showNotif('Loading Beijing data…')">
+      <div style="font-size:24px;margin-bottom:6px">🇨🇳</div>
+      <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--moderate)">103</div>
+      <div style="font-size:12px;margin-top:3px">Beijing</div>
+      <div style="font-size:10px;color:var(--moderate);margin-top:4px">Unhealthy (SG)</div>
+    </div>
+    <div class="card" style="text-align:center;cursor:pointer" onclick="showNotif('Loading London data…')">
+      <div style="font-size:24px;margin-bottom:6px">🇬🇧</div>
+      <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--good)">32</div>
+      <div style="font-size:12px;margin-top:3px">London</div>
+      <div style="font-size:10px;color:var(--good);margin-top:4px">Good</div>
+    </div>
+    <div class="card" style="text-align:center;cursor:pointer" onclick="showNotif('Loading Los Angeles data…')">
+      <div style="font-size:24px;margin-bottom:6px">🇺🇸</div>
+      <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--moderate)">76</div>
+      <div style="font-size:12px;margin-top:3px">Los Angeles</div>
+      <div style="font-size:10px;color:var(--moderate);margin-top:4px">Moderate</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- PLANNER -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section fade-in" id="section-planner">
+  <div class="hero-bar">
+    <div>
+      <div class="hero-title">Smart <em>Planner</em></div>
+      <div class="hero-sub">Schedule activities based on air quality & weather predictions</div>
+    </div>
+    <button class="btn-sm btn-primary" onclick="addPlan()">+ New Plan</button>
+  </div>
+
+  <!-- Create plan -->
+  <div class="plan-form" id="planForm" style="display:none">
+    <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:800;margin-bottom:16px;color:var(--accent)">+ Create New Plan</div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Activity Name</label>
+        <input class="form-input" id="planName" placeholder="e.g. Morning Run">
+      </div>
+      <div class="form-field">
+        <label>Type</label>
+        <select class="form-input" id="planType">
+          <option>🏃 Outdoor Exercise</option>
+          <option>🚴 Cycling</option>
+          <option>🏕 Camping</option>
+          <option>🚗 Travel</option>
+          <option>🧘 Yoga / Meditation</option>
+          <option>🎒 Hiking</option>
+          <option>🏡 Indoor Activity</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Date</label>
+        <input class="form-input" type="date" id="planDate">
+      </div>
+      <div class="form-field">
+        <label>Time</label>
+        <input class="form-input" type="time" id="planTime">
+      </div>
+      <div class="form-field">
+        <label>Location</label>
+        <input class="form-input" id="planLoc" placeholder="e.g. Sohna Lake">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field" style="flex:2">
+        <label>Notes</label>
+        <input class="form-input" id="planNotes" placeholder="Additional notes…">
+      </div>
+      <div class="form-field" style="flex:0 0 auto;display:flex;align-items:flex-end;gap:8px">
+        <button class="btn-sm btn-primary" onclick="savePlan()">Save Plan</button>
+        <button class="btn-sm btn-ghost" onclick="document.getElementById('planForm').style.display='none'">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AQI-based recommendation -->
+  <div style="background:linear-gradient(135deg,rgba(0,168,255,0.08),rgba(0,212,170,0.05));border:1px solid rgba(0,168,255,0.2);border-radius:var(--r2);padding:18px;margin-bottom:20px;display:flex;gap:16px;align-items:center">
+    <div style="font-size:32px">💡</div>
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;margin-bottom:4px">Smart Suggestion</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">Based on this week's forecast, <strong style="color:var(--text)">Sunday afternoon (14:00–18:00)</strong> is the best window for outdoor activities. AQI predicted at 32 after rainfall.</div>
+    </div>
+    <button class="btn-sm btn-ghost" onclick="scheduleRecommended()" style="flex:0 0 auto">Schedule This</button>
+  </div>
+
+  <!-- Plans list -->
+  <div class="sec-label">Upcoming Plans</div>
+  <div id="plansList">
+    <div class="plan-item">
+      <div class="plan-dot" style="background:var(--good)"></div>
+      <div class="plan-info">
+        <h4>🏃 Morning Run — Aravalli Trail</h4>
+        <p>Outdoor exercise · AQI predicted: 38 · Weather: Clear, 22°C</p>
+      </div>
+      <div class="plan-meta">
+        <strong>Tomorrow</strong>
+        06:30 AM
+        <div style="margin-top:4px"><span class="card-badge badge-good">Safe</span></div>
+      </div>
+    </div>
+    <div class="plan-item">
+      <div class="plan-dot" style="background:var(--moderate)"></div>
+      <div class="plan-info">
+        <h4>🚴 Evening Cycle — Gurgaon Route</h4>
+        <p>Cycling 25km · AQI predicted: 91 · Weather: Partly cloudy, 28°C</p>
+      </div>
+      <div class="plan-meta">
+        <strong>Wed</strong>
+        05:30 PM
+        <div style="margin-top:4px"><span class="card-badge badge-mod">Caution</span></div>
+      </div>
+    </div>
+    <div class="plan-item" style="border-color:rgba(255,107,53,0.2)">
+      <div class="plan-dot" style="background:var(--unhealthy)"></div>
+      <div class="plan-info">
+        <h4>🚗 Road trip — Delhi–Chandigarh</h4>
+        <p>Travel · AQI along route: 140–170 · Weather: Hazy, 33°C</p>
+      </div>
+      <div class="plan-meta">
+        <strong>Thu</strong>
+        08:00 AM
+        <div style="margin-top:4px"><span class="card-badge badge-bad">High Risk</span></div>
+      </div>
+    </div>
+    <div class="plan-item">
+      <div class="plan-dot" style="background:var(--good)"></div>
+      <div class="plan-info">
+        <h4>🏕 Weekend Camping — Damdama Lake</h4>
+        <p>Camping overnight · AQI predicted: 32 · Weather: Post-rain, 24°C</p>
+      </div>
+      <div class="plan-meta">
+        <strong>Sun</strong>
+        02:00 PM
+        <div style="margin-top:4px"><span class="card-badge badge-good">Perfect</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share section -->
+  <div class="sec-label">Share Plans</div>
+  <div class="share-card">
+    <h3>Share Your Air Report</h3>
+    <p>Share current air quality conditions and your plans with family, friends or your health provider.</p>
+    <div class="share-buttons">
+      <button class="share-btn" onclick="showNotif('Link copied to clipboard!')">🔗 Copy Link</button>
+      <button class="share-btn" onclick="showNotif('Opening WhatsApp…')">💬 WhatsApp</button>
+      <button class="share-btn" onclick="showNotif('Opening email…')">📧 Email</button>
+      <button class="share-btn" onclick="showNotif('Generating PDF report…')">📄 PDF Report</button>
+      <button class="share-btn" onclick="showNotif('Shared to community board!')">🌐 Community Board</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SUGGESTIONS -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section fade-in" id="section-suggestions">
+  <div class="hero-bar">
+    <div>
+      <div class="hero-title">Personalized <em>Suggestions</em></div>
+      <div class="hero-sub">AI-generated health & activity recommendations based on real-time data</div>
+    </div>
+  </div>
+
+  <div class="grid-main">
+    <div>
+      <div class="sec-label">Health Recommendations</div>
+
+      <div class="suggestion" style="margin-bottom:12px;padding:18px">
+        <div class="sug-icon" style="font-size:28px">🫁</div>
+        <div class="sug-text">
+          <h4 style="font-size:14px">Breathing Exercise Window</h4>
+          <p style="font-size:12px">Indoor CO₂ at 520 ppm — optimal for deep breathing exercises. Open windows between 6–9 AM for natural ventilation when outdoor AQI is lowest.</p>
+          <span class="sug-tag">NOW OPTIMAL</span>
+        </div>
+      </div>
+
+      <div class="suggestion" style="margin-bottom:12px;padding:18px;border-color:rgba(245,200,66,0.25)">
+        <div class="sug-icon" style="font-size:28px">😷</div>
+        <div class="sug-text">
+          <h4 style="font-size:14px">Mask Advisory — Thu Morning</h4>
+          <p style="font-size:12px">Temperature inversion expected to push AQI above 120 on Thursday morning. N95 masks recommended for anyone commuting outdoors between 7–10 AM.</p>
+          <span class="sug-tag" style="background:rgba(245,200,66,0.15);color:var(--moderate)">ADVISORY</span>
+        </div>
+      </div>
+
+      <div class="suggestion" style="margin-bottom:12px;padding:18px">
+        <div class="sug-icon" style="font-size:28px">💧</div>
+        <div class="sug-text">
+          <h4 style="font-size:14px">Hydration Alert</h4>
+          <p style="font-size:12px">Humidity dropping below 40% between 12–4 PM. Combined with moderate PM2.5, increase water intake to help clear respiratory tract.</p>
+          <span class="sug-tag">DAILY HEALTH</span>
+        </div>
+      </div>
+
+      <div class="suggestion" style="margin-bottom:12px;padding:18px">
+        <div class="sug-icon" style="font-size:28px">🌿</div>
+        <div class="sug-text">
+          <h4 style="font-size:14px">Air-Purifying Plants</h4>
+          <p style="font-size:12px">Your indoor VOC levels can be reduced by 15–25% with 2–3 spider plants or peace lilies. Highly effective for your room volume.</p>
+          <span class="sug-tag">HOME TIP</span>
+        </div>
+      </div>
+
+      <div class="suggestion" style="padding:18px;border-color:rgba(255,107,53,0.2)">
+        <div class="sug-icon" style="font-size:28px">🏃</div>
+        <div class="sug-text">
+          <h4 style="font-size:14px">Reschedule Intense Exercise</h4>
+          <p style="font-size:12px">AQI 87 with PM2.5 at 18.4 µg/m³ — moderate intensity exercise increases pollutant intake by 3x due to increased breathing rate. Move workouts to early morning or after Sunday rain.</p>
+          <span class="sug-tag" style="background:rgba(255,107,53,0.15);color:var(--unhealthy)">HIGH PRIORITY</span>
+        </div>
+      </div>
+
+      <div class="sec-label">Weather-Based Tips</div>
+      <div class="grid-2">
+        <div class="suggestion" style="padding:16px">
+          <div class="sug-icon">☀</div>
+          <div class="sug-text">
+            <h4>UV Index: High (7)</h4>
+            <p>Apply SPF 50+ after 10 AM. Peak UV between 11 AM–3 PM.</p>
+          </div>
+        </div>
+        <div class="suggestion" style="padding:16px">
+          <div class="sug-icon">🌬</div>
+          <div class="sug-text">
+            <h4>Wind Advisory</h4>
+            <p>Gusty winds post-4 PM may carry dust. Avoid outdoor dining.</p>
+          </div>
+        </div>
+        <div class="suggestion" style="padding:16px">
+          <div class="sug-icon">🌡</div>
+          <div class="sug-text">
+            <h4>Heat Index: 34°C</h4>
+            <p>Feels like 34°C due to humidity. Limit strenuous outdoor work.</p>
+          </div>
+        </div>
+        <div class="suggestion" style="padding:16px">
+          <div class="sug-icon">🚿</div>
+          <div class="sug-text">
+            <h4>Rain Sunday</h4>
+            <p>8mm rain expected. Best post-rain air quality of the week.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-label">Air Quality Index Guide</div>
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:6px;background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.15)">
+            <span style="font-size:12px">0–50 <strong style="color:var(--good)">Good</strong></span>
+            <span style="font-size:10px;color:var(--text3)">Enjoy outdoor activities</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:6px;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.15)">
+            <span style="font-size:12px">51–100 <strong style="color:var(--moderate)">Moderate</strong></span>
+            <span style="font-size:10px;color:var(--text3)">Sensitive groups take care</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:6px;background:rgba(255,107,53,0.05);border:1px solid rgba(255,107,53,0.15)">
+            <span style="font-size:12px">101–150 <strong style="color:var(--unhealthy)">Unhealthy (SG)</strong></span>
+            <span style="font-size:10px;color:var(--text3)">Reduce outdoor exertion</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:6px;background:rgba(224,52,80,0.05);border:1px solid rgba(224,52,80,0.15)">
+            <span style="font-size:12px">151–200 <strong style="color:var(--hazard)">Unhealthy</strong></span>
+            <span style="font-size:10px;color:var(--text3)">Wear masks outdoors</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:6px;background:rgba(153,0,76,0.08);border:1px solid rgba(153,0,76,0.2)">
+            <span style="font-size:12px">200+ <strong style="color:#cc0055">Very Unhealthy/Haz.</strong></span>
+            <span style="font-size:10px;color:var(--text3)">Stay indoors, seal windows</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-label">Notifications</div>
+      <div class="card">
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>AQI Alerts</h4>
+            <p>Notify when local AQI exceeds threshold</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Morning Brief</h4>
+            <p>Daily 7 AM air quality summary</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Exercise Window Alerts</h4>
+            <p>Notify when conditions are optimal</p>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Rain Alerts</h4>
+            <p>Post-rain air quality notifications</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SETTINGS -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section fade-in" id="section-settings">
+  <div class="hero-bar">
+    <div>
+      <div class="hero-title">Settings & <em>Profile</em></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div>
+      <div class="sec-label">Locations</div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>📍 Sohna, Haryana</h4>
+            <p>Primary location · Auto-detected</p>
+          </div>
+          <span style="font-size:10px;color:var(--accent)">PRIMARY</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>🏠 Home (Indoor Sensor)</h4>
+            <p>Connected · Last sync 2 min ago</p>
+          </div>
+          <span style="font-size:10px;color:var(--good)">ONLINE</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>🏢 Office — Gurgaon</h4>
+            <p>Saved location</p>
+          </div>
+          <span style="font-size:10px;color:var(--text3)">SAVED</span>
+        </div>
+        <div style="margin-top:12px">
+          <button class="btn-sm btn-ghost" onclick="showNotif('Add location feature coming soon!')">+ Add Location</button>
+        </div>
+      </div>
+
+      <div class="sec-label">Health Profile</div>
+      <div class="card">
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Asthma / Respiratory</h4>
+            <p>Enable extra sensitive group alerts</p>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Cardiovascular Condition</h4>
+            <p>Enable heart-related air quality alerts</p>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Child / Elderly in Household</h4>
+            <p>Lower AQI alert threshold to 75</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Athlete Mode</h4>
+            <p>Higher precision for exercise timing</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-label">Data & Display</div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>AQI Standard</h4>
+            <p>Choose index standard</p>
+          </div>
+          <select class="form-input" style="width:120px;padding:5px 10px">
+            <option>India (NAQI)</option>
+            <option>US (AQI)</option>
+            <option>WHO</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Temperature Unit</h4>
+            <p>Display preference</p>
+          </div>
+          <select class="form-input" style="width:120px;padding:5px 10px">
+            <option>Celsius (°C)</option>
+            <option>Fahrenheit (°F)</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Data Refresh Rate</h4>
+            <p>How often to update readings</p>
+          </div>
+          <select class="form-input" style="width:120px;padding:5px 10px">
+            <option>5 minutes</option>
+            <option>15 minutes</option>
+            <option>1 hour</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sec-label">Notifications</div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Push Notifications</h4>
+            <p>Browser / device alerts</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Email Digest</h4>
+            <p>Weekly air quality summary</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>AQI Alert Threshold</h4>
+            <p>Alert when AQI exceeds</p>
+          </div>
+          <input class="form-input" type="number" value="100" style="width:80px;padding:5px 10px;text-align:center">
+        </div>
+      </div>
+
+      <button class="btn-sm btn-primary" style="width:100%;padding:12px" onclick="showNotif('Settings saved!')">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<!-- Notification toast -->
+<div class="notif" id="notif">
+  <strong id="notifTitle">Notification</strong>
+  <span id="notifMsg"></span>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════════
+//  AirScope — API Client Layer
+//  Change API_BASE to wherever your backend is running.
+//  Defaults to localhost:8000 for local development.
+// ════════════════════════════════════════════════════════════════
+
+const API_BASE = 'http://localhost:8000';
+
+// ── Auth token helpers ─────────────────────────────────────────
+const Auth = {
+  getToken()       { return localStorage.getItem('airscope_token'); },
+  setToken(t)      { localStorage.setItem('airscope_token', t); },
+  removeToken()    { localStorage.removeItem('airscope_token'); },
+  getUser()        { try { return JSON.parse(localStorage.getItem('airscope_user')||'null'); } catch{return null;} },
+  setUser(u)       { localStorage.setItem('airscope_user', JSON.stringify(u)); },
+  removeUser()     { localStorage.removeItem('airscope_user'); },
+  isLoggedIn()     { return !!this.getToken(); },
+};
+
+// ── Core API fetch wrapper ─────────────────────────────────────
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers||{}) };
+  const token = Auth.getToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { ...opts, headers });
+    if (res.status === 401) { Auth.removeToken(); Auth.removeUser(); updateAuthUI(); }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    return res.status === 204 ? null : res.json();
+  } catch(e) {
+    if (e instanceof TypeError) throw new Error('Cannot reach backend. Is it running?');
+    throw e;
+  }
+}
+
+// ── Location state ─────────────────────────────────────────────
+const LOC = {
+  lat: 28.43, lon: 77.00, city: 'Sohna, Haryana',
+  set(lat, lon, city) { this.lat=lat; this.lon=lon; this.city=city; }
+};
+
+// ── Loading overlay ────────────────────────────────────────────
+const Loading = {
+  show(msg='Loading…') {
+    let el = document.getElementById('globalLoader');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'globalLoader';
+      el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(7,11,15,.75);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+      el.innerHTML = `<div style="text-align:center"><div class="live-dot" style="width:12px;height:12px;margin:0 auto 12px"></div><div style="font-family:Syne,sans-serif;font-size:13px;color:var(--accent)">${msg}</div></div>`;
+      document.body.appendChild(el);
+    } else {
+      el.querySelector('div div:last-child').textContent = msg;
+      el.style.display = 'flex';
+    }
+  },
+  hide() { const el=document.getElementById('globalLoader'); if(el) el.style.display='none'; }
+};
+
+// ════════════════════════════════════════════════════════════════
+//  AUTH MODAL
+// ════════════════════════════════════════════════════════════════
+function injectAuthModal() {
+  const modal = document.createElement('div');
+  modal.id = 'authModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:500;background:rgba(7,11,15,.85);display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+  modal.innerHTML = `
+  <div style="background:var(--surface);border:1px solid var(--border-accent);border-radius:20px;padding:32px;width:100%;max-width:420px;position:relative">
+    <button onclick="closeAuthModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer">✕</button>
+    <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px">Air<span style="color:var(--accent)">Scope</span></div>
+    <p style="font-size:11px;color:var(--text2);margin-bottom:24px">Sign in to sync plans, locations & settings</p>
+
+    <div class="tab-bar" style="margin-bottom:20px">
+      <button class="tab active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="tab" id="tabRegister" onclick="switchAuthTab('register')">Register</button>
+    </div>
+
+    <!-- Login form -->
+    <div id="loginForm">
+      <div class="form-field" style="margin-bottom:12px">
+        <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px">Email</label>
+        <input id="loginEmail" class="form-input" type="email" placeholder="you@example.com" style="width:100%">
+      </div>
+      <div class="form-field" style="margin-bottom:20px">
+        <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px">Password</label>
+        <input id="loginPwd" class="form-input" type="password" placeholder="••••••••" style="width:100%">
+      </div>
+      <button onclick="doLogin()" class="btn-sm btn-primary" style="width:100%;padding:12px;font-size:13px">Sign In</button>
+    </div>
+
+    <!-- Register form -->
+    <div id="registerForm" style="display:none">
+      <div class="form-row">
+        <div class="form-field">
+          <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px">Email</label>
+          <input id="regEmail" class="form-input" type="email" placeholder="you@example.com">
+        </div>
+        <div class="form-field">
+          <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px">Username</label>
+          <input id="regUsername" class="form-input" placeholder="johndoe">
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:12px">
+        <div class="form-field">
+          <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px">Full Name</label>
+          <input id="regName" class="form-input" placeholder="John Doe">
+        </div>
+        <div class="form-field">
+          <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px">Password</label>
+          <input id="regPwd" class="form-input" type="password" placeholder="min 8 chars">
+        </div>
+      </div>
+      <button onclick="doRegister()" class="btn-sm btn-primary" style="width:100%;padding:12px;font-size:13px;margin-top:20px">Create Account</button>
+    </div>
+
+    <div id="authError" style="margin-top:12px;font-size:11px;color:var(--hazard);text-align:center;display:none"></div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+function openAuthModal()  { document.getElementById('authModal').style.display='flex'; }
+function closeAuthModal() { document.getElementById('authModal').style.display='none'; }
+function switchAuthTab(tab) {
+  document.getElementById('loginForm').style.display    = tab==='login'    ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = tab==='register' ? 'block' : 'none';
+  document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+  document.getElementById('tabRegister').classList.toggle('active', tab==='register');
+  document.getElementById('authError').style.display = 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value;
+  const pwd   = document.getElementById('loginPwd').value;
+  if (!email || !pwd) return showAuthError('Please fill in all fields');
+  try {
+    Loading.show('Signing in…');
+    const res = await api('/api/auth/login', { method:'POST', body: JSON.stringify({email, password:pwd}) });
+    Auth.setToken(res.access_token);
+    const me = await api('/api/auth/me');
+    Auth.setUser(me);
+    closeAuthModal();
+    updateAuthUI();
+    showNotif(`Welcome back, ${me.username}! 👋`);
+    loadDashboard();
+  } catch(e) { showAuthError(e.message); }
+  finally { Loading.hide(); }
+}
+
+async function doRegister() {
+  const email    = document.getElementById('regEmail').value;
+  const username = document.getElementById('regUsername').value;
+  const name     = document.getElementById('regName').value;
+  const pwd      = document.getElementById('regPwd').value;
+  if (!email || !username || !pwd) return showAuthError('Email, username and password are required');
+  try {
+    Loading.show('Creating account…');
+    await api('/api/auth/register', { method:'POST', body: JSON.stringify({email, username, full_name:name, password:pwd}) });
+    // Auto-login after register
+    const res = await api('/api/auth/login', { method:'POST', body: JSON.stringify({email, password:pwd}) });
+    Auth.setToken(res.access_token);
+    const me = await api('/api/auth/me');
+    Auth.setUser(me);
+    closeAuthModal();
+    updateAuthUI();
+    showNotif(`Account created! Welcome, ${me.username} 🎉`);
+    loadDashboard();
+  } catch(e) { showAuthError(e.message); }
+  finally { Loading.hide(); }
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function doLogout() {
+  Auth.removeToken(); Auth.removeUser();
+  updateAuthUI();
+  showNotif('Logged out.');
+}
+
+function updateAuthUI() {
+  const user = Auth.getUser();
+  const actions = document.querySelector('.nav-actions');
+  if (!actions) return;
+  if (user) {
+    actions.innerHTML = `
+      <span style="font-size:11px;color:var(--text3)"><span class="live-dot"></span>Live</span>
+      <span style="font-size:11px;color:var(--accent);font-family:'Syne',sans-serif;font-weight:700">👤 ${user.username}</span>
+      <button class="btn-sm btn-ghost" onclick="showSection('settings')">⚙ Settings</button>
+      <button class="btn-sm btn-ghost" onclick="doLogout()">Sign Out</button>`;
+  } else {
+    actions.innerHTML = `
+      <span style="font-size:11px;color:var(--text3)"><span class="live-dot"></span>Live</span>
+      <button class="btn-sm btn-ghost" onclick="openAuthModal()">Sign In</button>
+      <button class="btn-sm btn-primary" onclick="openAuthModal()">Register</button>`;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  DASHBOARD — load all data from backend
+// ════════════════════════════════════════════════════════════════
+let dashData = null;
+
+async function loadDashboard() {
+  Loading.show('Fetching live air data…');
+  try {
+    dashData = await api(`/api/dashboard?lat=${LOC.lat}&lon=${LOC.lon}&city=${encodeURIComponent(LOC.city)}`);
+    renderDashboard(dashData);
+  } catch(e) {
+    showNotif(`⚠ ${e.message}`, 'Connection Error');
+    console.error('[Dashboard]', e);
+  } finally { Loading.hide(); }
+}
+
+function aqiGradient(aqi) {
+  if (aqi <= 50)  return 'linear-gradient(135deg,var(--good),#00f0c0)';
+  if (aqi <= 100) return 'linear-gradient(135deg,var(--moderate),#ffda60)';
+  if (aqi <= 150) return 'linear-gradient(135deg,var(--unhealthy),#ff9060)';
+  return 'linear-gradient(135deg,var(--hazard),#ff4060)';
+}
+function aqiColor(aqi) {
+  if (aqi <= 50)  return 'var(--good)';
+  if (aqi <= 100) return 'var(--moderate)';
+  if (aqi <= 150) return 'var(--unhealthy)';
+  return 'var(--hazard)';
+}
+function aqiBadgeClass(cat='') {
+  const c = cat.toLowerCase();
+  if (c.includes('good'))       return 'badge-good';
+  if (c.includes('moderate'))   return 'badge-mod';
+  return 'badge-bad';
+}
+
+function renderDashboard(d) {
+  if (!d) return;
+  const aqi    = d.aqi;
+  const wx     = d.weather;
+  const nearby = d.nearby_stations || [];
+  const sug    = d.suggestions;
+
+  // ── Hero sub ──
+  document.querySelector('.hero-sub').innerHTML =
+    `📍 ${LOC.city} — <span class="live-dot"></span>Updated just now`;
+
+  // ── Local AQI card ──
+  if (aqi) {
+    const aqiNum = document.querySelector('#section-dashboard .aqi-number[style*="moderate"]') ||
+                   document.querySelectorAll('#section-dashboard .aqi-number')[1];
+    if (aqiNum) {
+      aqiNum.textContent = aqi.aqi;
+      aqiNum.style.background = aqiGradient(aqi.aqi);
+      aqiNum.style.webkitBackgroundClip = 'text';
+      aqiNum.style.webkitTextFillColor  = 'transparent';
+    }
+    const localStatus = document.querySelectorAll('#section-dashboard .aqi-status')[1];
+    if (localStatus) {
+      const ico = aqi.aqi<=50?'✓':aqi.aqi<=100?'⚠':'✗';
+      localStatus.textContent = `${ico} ${aqi.aqi_category}`;
+      localStatus.style.color = aqi.color || aqiColor(aqi.aqi);
+    }
+    const localBadge = document.querySelectorAll('#section-dashboard .card-badge')[1];
+    if (localBadge) {
+      localBadge.textContent  = aqi.aqi_category;
+      localBadge.className    = `card-badge ${aqiBadgeClass(aqi.aqi_category)}`;
+    }
+    // Pollutant bars
+    renderPollutants(aqi.pollutants);
+  }
+
+  // ── Weather card ──
+  if (wx) {
+    const cur = wx.current;
+    const wxCard = document.querySelector('#section-dashboard .card:nth-child(3) div[style*="text-align:center"]');
+    if (wxCard) {
+      wxCard.innerHTML = `
+        <div style="font-size:42px">${cur.condition_icon}</div>
+        <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;margin-top:4px">${cur.temp_c}°C</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">${cur.condition} · ${cur.humidity}% Humidity</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Wind: ${cur.wind_speed_kmh} km/h ${cur.wind_direction}</div>`;
+    }
+    // Hourly
+    buildHourlyFromAPI(wx.hourly, aqi ? aqi.aqi : 90);
+  }
+
+  // ── Suggestions / Health Alert ──
+  if (sug && sug.suggestions.length) {
+    const alertCard = document.querySelector('#section-dashboard .card:nth-child(4) div[style*="padding:8px"]');
+    if (alertCard) {
+      alertCard.innerHTML = sug.suggestions.slice(0,2).map(s => `
+        <div class="suggestion" style="margin-bottom:8px">
+          <div class="sug-icon">${s.icon}</div>
+          <div class="sug-text">
+            <h4>${s.title}</h4>
+            <p>${s.body}</p>
+          </div>
+        </div>`).join('');
+    }
+  }
+
+  // ── Nearby stations ──
+  renderNearbyStations(nearby);
+
+  // ── Charts ──
+  initChartsFromAPI(aqi);
+  if (d.forecast) initForecastChartFromAPI(d.forecast);
+}
+
+function renderPollutants(p) {
+  if (!p) return;
+  const rows = document.querySelectorAll('#section-dashboard .pollutant');
+  const pdata = [
+    { name:'PM2.5', val: p.pm25, max: 250 },
+    { name:'PM10',  val: p.pm10, max: 430 },
+    { name:'NO₂',   val: p.no2,  max: 200 },
+    { name:'O₃',    val: p.o3,   max: 200 },
+    { name:'SO₂',   val: p.so2,  max: 350 },
+    { name:'CO',    val: p.co,   max: 15 },
+  ];
+  rows.forEach((row, i) => {
+    if (!pdata[i]) return;
+    const { name, val, max } = pdata[i];
+    if (val == null) return;
+    const pct  = Math.min(100, (val / max) * 100).toFixed(0);
+    const fill = pct < 35 ? 'fill-good' : pct < 60 ? 'fill-mod' : 'fill-bad';
+    row.innerHTML = `
+      <div class="poll-row"><span class="poll-name">${name}</span><span class="poll-val">${val}</span></div>
+      <div class="poll-bar"><div class="poll-fill ${fill}" style="width:${pct}%"></div></div>`;
+  });
+}
+
+function buildHourlyFromAPI(hourly, baseAqi) {
+  const row = document.getElementById('hourlyRow');
+  if (!row || !hourly) return;
+  row.innerHTML = '';
+  hourly.slice(0, 24).forEach((h, i) => {
+    const t = document.createElement('div');
+    t.className = 'weather-tile' + (i===0 ? ' now' : '');
+    // Estimate hourly AQI by varying base ±20 sinusoidally
+    const hAqi = Math.round(baseAqi + 15*Math.sin((i-8)*Math.PI/12));
+    t.innerHTML = `
+      <div class="w-time">${h.time}</div>
+      <div class="w-icon">${h.condition_icon}</div>
+      <div class="w-temp">${h.temp_c}°</div>
+      <div class="w-aqi">AQI ${hAqi}</div>`;
+    row.appendChild(t);
+  });
+}
+
+function renderNearbyStations(stations) {
+  const grid = document.querySelector('#section-dashboard .grid-3');
+  if (!grid || !stations.length) return;
+  grid.innerHTML = stations.slice(0,3).map(s => `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">${s.city}</span>
+        <span class="card-badge ${aqiBadgeClass(s.aqi_category||'')}">${s.aqi_category||''}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;padding:8px 0">
+        <div style="font-family:'Syne',sans-serif;font-size:44px;font-weight:800;color:${s.color||aqiColor(s.aqi)}">${s.aqi}</div>
+        <div>
+          <div style="font-size:11px;color:var(--text2)">${s.distance_km ? s.distance_km+' km away' : ''}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Charts with real data ──────────────────────────────────────
+const chartDefaults = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend:{ display:false }, tooltip:{
+    backgroundColor:'rgba(13,19,24,0.95)', borderColor:'rgba(0,212,170,0.3)', borderWidth:1,
+    titleColor:'#e8f0f7', bodyColor:'#8fa3b4', padding:10
+  }},
+  scales: {
+    x:{ grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'#526070', font:{size:10} } },
+    y:{ grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'#526070', font:{size:10} } }
+  }
+};
+let trendChartInst, forecastChartInst;
+
+function initChartsFromAPI(aqiData) {
+  const ctx = document.getElementById('trendChart');
+  if (!ctx) return;
+  if (trendChartInst) { trendChartInst.destroy(); trendChartInst = null; }
+
+  // Generate synthetic 24h trend around current AQI (backend doesn't serve history yet)
+  const base = aqiData ? aqiData.aqi : 90;
+  const labels = Array.from({length:12},(_,i)=>{const h=(i*2)%24;return `${String(h).padStart(2,'0')}:00`;});
+  const data   = labels.map((_,i)=> Math.max(5, Math.round(base - 20 + 30*Math.sin((i-3)*Math.PI/6) + (Math.random()-0.5)*8)));
+
+  trendChartInst = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[{ data, fill:true,
+      borderColor:'rgba(0,212,170,1)', borderWidth:2,
+      backgroundColor:'rgba(0,212,170,0.06)',
+      pointBackgroundColor:'rgba(0,212,170,1)', pointRadius:3, tension:0.4 }] },
+    options: chartDefaults
+  });
+}
+
+function initCharts() {
+  if (!dashData) { loadDashboard(); return; }
+  initChartsFromAPI(dashData.aqi);
+}
+
+function initForecastChartFromAPI(forecast) {
+  const ctx = document.getElementById('forecastChart');
+  if (!ctx) return;
+  if (forecastChartInst) { forecastChartInst.destroy(); forecastChartInst = null; }
+  const days = forecast.days || [];
+  if (!days.length) return;
+  const labels  = days.map(d => d.day_label);
+  const aqiVals = days.map(d => d.aqi_predicted);
+  const hiTemps = days.map(d => d.temp_high_c);
+  const loTemps = days.map(d => d.temp_low_c);
+
+  forecastChartInst = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'AQI', data:aqiVals, borderColor:'rgba(0,212,170,1)', borderWidth:2, fill:false, tension:0.4, pointRadius:3, yAxisID:'y' },
+      { label:'High °C', data:hiTemps, borderColor:'rgba(0,168,255,0.7)', borderWidth:2, fill:false, tension:0.4, pointRadius:3, yAxisID:'y2' },
+      { label:'Low °C',  data:loTemps, borderColor:'rgba(245,200,66,0.7)', borderWidth:2, fill:false, tension:0.4, pointRadius:3, yAxisID:'y2' }
+    ]},
+    options:{ ...chartDefaults,
+      scales:{
+        x:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#526070',font:{size:10}} },
+        y:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#526070',font:{size:10}}, position:'left' },
+        y2:{ grid:{display:false}, ticks:{color:'#526070',font:{size:10}}, position:'right' }
+      },
+      plugins:{ ...chartDefaults.plugins, legend:{ display:true, labels:{ color:'#526070', font:{size:10}, boxWidth:12 } } }
+    }
+  });
+}
+
+function initForecastChart() {
+  if (dashData && dashData.forecast) { initForecastChartFromAPI(dashData.forecast); return; }
+  // Trigger full load if no data yet
+  loadForecastSection();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  FORECAST SECTION
+// ════════════════════════════════════════════════════════════════
+async function loadForecastSection() {
+  if (dashData && dashData.forecast) {
+    renderForecastSection(dashData.forecast);
+    return;
+  }
+  try {
+    Loading.show('Generating AI forecast…');
+    const fc = await api(`/api/forecast/location?lat=${LOC.lat}&lon=${LOC.lon}&days=14&city=${encodeURIComponent(LOC.city)}`);
+    renderForecastSection(fc);
+  } catch(e) {
+    showNotif(`⚠ ${e.message}`, 'Forecast Error');
+  } finally { Loading.hide(); }
+}
+
+function renderForecastSection(fc) {
+  if (!fc) return;
+  buildForecastFromAPI(fc.days);
+  initForecastChartFromAPI(fc);
+  renderKeyDrivers(fc.key_drivers || []);
+  renderOutdoorWindows(fc.best_outdoor_windows || []);
+  const acc = document.querySelector('#section-forecast [style*="font-size:26px"]');
+  if (acc) acc.textContent = Math.round((fc.model_accuracy||0.91)*100) + '%';
+}
+
+function buildForecastFromAPI(days) {
+  const row = document.getElementById('forecastRow');
+  if (!row || !days) return;
+  row.innerHTML = '';
+  days.slice(0,7).forEach(d => {
+    const c = document.createElement('div');
+    c.className = 'forecast-card';
+    c.innerHTML = `
+      <div class="fc-day">${d.day_label}</div>
+      <div class="fc-icon">${d.condition_icon}</div>
+      <div class="fc-aqi" style="color:${d.color}">${d.aqi_predicted}</div>
+      <div class="fc-label" style="color:${d.color};font-size:9px">${d.aqi_category}</div>
+      <div class="fc-temp">${d.temp_high_c}/${d.temp_low_c}°C</div>`;
+    row.appendChild(c);
+  });
+}
+
+function renderKeyDrivers(drivers) {
+  const container = document.querySelector('#section-forecast .grid-2 .card:first-child');
+  if (!container || !drivers.length) return;
+  container.innerHTML = `<div class="card-header"><span class="card-title">Key Drivers This Week</span></div>` +
+    drivers.map(dr => `
+      <div class="suggestion">
+        <div class="sug-icon">${dr.icon}</div>
+        <div class="sug-text">
+          <h4>${dr.title}</h4>
+          <p>${dr.body}</p>
+          <span class="sug-tag">${dr.tag}</span>
+        </div>
+      </div>`).join('');
+}
+
+function renderOutdoorWindows(windows) {
+  const container = document.querySelector('#section-forecast .grid-2 .card:last-child');
+  if (!container || !windows.length) return;
+  container.innerHTML = `<div class="card-header"><span class="card-title">Best Times to Be Outdoors</span></div>` +
+    windows.map(w => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;
+        background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.2);border-radius:var(--r);margin-bottom:8px">
+        <span style="font-size:12px">${w.icon} ${w.day_label} — ${w.recommended_hours||'Morning'}</span>
+        <span style="font-size:11px;color:${aqiColor(w.aqi)};font-family:'Syne',sans-serif;font-weight:700">AQI ~${w.aqi}</span>
+      </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  EXPLORE / MAP SEARCH
+// ════════════════════════════════════════════════════════════════
+async function searchLocation() {
+  const q = document.getElementById('mapSearch').value.trim();
+  if (!q) return;
+  try {
+    Loading.show(`Searching "${q}"…`);
+    const [aqiData, wxData] = await Promise.all([
+      api(`/api/aqi/city?city=${encodeURIComponent(q)}`),
+      api(`/api/weather/city?city=${encodeURIComponent(q)}`)
+    ]);
+    renderSearchResult(q, aqiData, wxData);
+  } catch(e) {
+    showNotif(`Not found: ${e.message}`, 'Search');
+  } finally { Loading.hide(); }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const si = document.getElementById('mapSearch');
+  if (si) si.addEventListener('keydown', e => { if(e.key==='Enter') searchLocation(); });
+});
+
+function renderSearchResult(city, aqi, wx) {
+  const grid = document.querySelector('#section-explore .grid-main2');
+  if (!grid) return;
+  const advice_color = aqi ? (aqi.aqi<=50?'rgba(0,212,170':'rgba(255,107,53') : 'rgba(0,212,170';
+  const new_card = document.createElement('div');
+  new_card.className = 'card';
+  new_card.style.borderColor = aqi ? aqi.color : 'var(--border)';
+  new_card.innerHTML = `
+    <div class="card-header">
+      <span class="card-title">${city}</span>
+      <span class="card-badge ${aqiBadgeClass(aqi?.aqi_category||'')}">${aqi?.aqi_category||'—'}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+      <div style="font-family:'Syne',sans-serif;font-size:52px;font-weight:800;color:${aqi?.color||'var(--text)'}">${aqi?.aqi||'—'}</div>
+      <div>
+        ${wx ? `<div style="font-size:11px;color:var(--text2)">${wx.current.condition} ${wx.current.temp_c}°C</div>
+        <div style="font-size:11px;color:var(--text2)">Humidity: ${wx.current.humidity}%</div>
+        <div style="font-size:11px;color:var(--text2)">Wind: ${wx.current.wind_speed_kmh} km/h</div>` : ''}
+        ${aqi ? `<div style="font-size:11px;color:var(--text2)">PM2.5: ${aqi.pollutants?.pm25||'—'} µg/m³</div>` : ''}
+      </div>
+    </div>
+    ${aqi ? `<div style="background:${advice_color},0.08);border:1px solid ${advice_color},0.2);border-radius:6px;padding:8px;font-size:11px;color:${aqi.color};margin-top:4px">${aqi.health_advice}</div>` : ''}`;
+  grid.prepend(new_card);
+  showNotif(`Loaded air data for ${city}`);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SUGGESTIONS SECTION
+// ════════════════════════════════════════════════════════════════
+async function loadSuggestionsSection() {
+  if (dashData && dashData.suggestions) {
+    renderSuggestionsSection(dashData.suggestions);
+    return;
+  }
+  try {
+    Loading.show('Generating suggestions…');
+    const sug = await api(`/api/suggestions/location?lat=${LOC.lat}&lon=${LOC.lon}`);
+    renderSuggestionsSection(sug);
+  } catch(e) {
+    showNotif(`⚠ ${e.message}`, 'Suggestions Error');
+  } finally { Loading.hide(); }
+}
+
+function renderSuggestionsSection(sug) {
+  const container = document.querySelector('#section-suggestions .grid-main > div:first-child');
+  if (!container || !sug) return;
+  const priorityStyle = { high:'rgba(255,107,53,0.05)', medium:'', low:'' };
+  const borderStyle   = { high:'rgba(255,107,53,0.2)', medium:'var(--border)', low:'var(--border)' };
+  const tagBg         = { high:'rgba(255,107,53,0.15)', medium:'rgba(245,200,66,0.15)', low:'var(--accent-glow)' };
+  const tagColor      = { high:'var(--unhealthy)', medium:'var(--moderate)', low:'var(--accent)' };
+
+  const header = `<div class="sec-label">Health Recommendations</div>`;
+  const cards  = sug.suggestions.map(s => `
+    <div class="suggestion" style="margin-bottom:12px;padding:18px;background:${priorityStyle[s.priority]||''};border-color:${borderStyle[s.priority]||'var(--border)'}">
+      <div class="sug-icon" style="font-size:28px">${s.icon}</div>
+      <div class="sug-text">
+        <h4 style="font-size:14px">${s.title}</h4>
+        <p style="font-size:12px">${s.body}</p>
+        <span class="sug-tag" style="background:${tagBg[s.priority]};color:${tagColor[s.priority]}">${s.tag}</span>
+      </div>
+    </div>`).join('');
+
+  container.innerHTML = header + cards;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  PLANS — full CRUD backed by database
+// ════════════════════════════════════════════════════════════════
+let plansData = [];
+
+async function loadPlans() {
+  if (!Auth.isLoggedIn()) {
+    document.getElementById('plansList').innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--text3)">
+        <div style="font-size:32px;margin-bottom:12px">🔒</div>
+        <div style="font-family:'Syne',sans-serif;font-size:14px;margin-bottom:8px">Sign in to manage plans</div>
+        <div style="font-size:11px;margin-bottom:16px">Plans are synced to your account and saved in the database</div>
+        <button class="btn-sm btn-primary" onclick="openAuthModal()">Sign In / Register</button>
+      </div>`;
+    return;
+  }
+  try {
+    plansData = await api('/api/plans?completed=false');
+    renderPlansList(plansData);
+  } catch(e) {
+    showNotif(`⚠ ${e.message}`, 'Plans Error');
+  }
+}
+
+function renderPlansList(plans) {
+  const list = document.getElementById('plansList');
+  if (!list) return;
+  if (!plans.length) {
+    list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text3);font-size:12px">No upcoming plans. Create one above ↑</div>`;
+    return;
+  }
+  const riskColor = { safe:'var(--good)', caution:'var(--moderate)', high:'var(--unhealthy)', extreme:'var(--hazard)' };
+  const riskBadge = { safe:'badge-good', caution:'badge-mod', high:'badge-bad', extreme:'badge-bad' };
+  list.innerHTML = plans.map(p => {
+    const dt = p.scheduled_at ? new Date(p.scheduled_at) : null;
+    const dateStr = dt ? dt.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'}) : 'TBD';
+    const timeStr = dt ? dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) : '';
+    const risk = p.risk_level || 'safe';
+    return `
+      <div class="plan-item" style="${risk==='high'||risk==='extreme'?'border-color:rgba(255,107,53,0.2)':''}">
+        <div class="plan-dot" style="background:${riskColor[risk]||'var(--accent)'}"></div>
+        <div class="plan-info">
+          <h4>${p.activity_type} — ${p.title}</h4>
+          <p>${p.location_label||'No location'} ${p.forecast_aqi?'· AQI forecast: '+p.forecast_aqi:''}</p>
+        </div>
+        <div class="plan-meta">
+          <strong>${dateStr}</strong>${timeStr}
+          <div style="margin-top:4px;display:flex;gap:4px;justify-content:flex-end">
+            <span class="card-badge ${riskBadge[risk]||'badge-good'}">${risk}</span>
+            <span style="font-size:10px;cursor:pointer;color:var(--text3)" onclick="sharePlan(${p.id})">🔗</span>
+            <span style="font-size:10px;cursor:pointer;color:var(--text3)" onclick="deletePlan(${p.id})">✕</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function savePlan() {
+  if (!Auth.isLoggedIn()) { openAuthModal(); return; }
+  const title    = document.getElementById('planName').value.trim();
+  const type     = document.getElementById('planType').value;
+  const dateVal  = document.getElementById('planDate').value;
+  const timeVal  = document.getElementById('planTime').value;
+  const loc      = document.getElementById('planLoc').value.trim();
+  const notes    = document.getElementById('planNotes').value.trim();
+  if (!title) { showNotif('Please enter an activity name'); return; }
+  const scheduled_at = (dateVal && timeVal) ? new Date(`${dateVal}T${timeVal}`).toISOString() : null;
+  try {
+    Loading.show('Saving plan…');
+    const plan = await api('/api/plans', {
+      method: 'POST',
+      body: JSON.stringify({
+        title, activity_type: type,
+        location_label: loc || null,
+        lat: LOC.lat, lon: LOC.lon,
+        scheduled_at, notes: notes || null
+      })
+    });
+    document.getElementById('planForm').style.display = 'none';
+    showNotif(`Plan "${plan.title}" saved! Risk: ${plan.risk_level||'safe'} 📋`);
+    await loadPlans();
+  } catch(e) {
+    showNotif(`⚠ ${e.message}`, 'Save Error');
+  } finally { Loading.hide(); }
+}
+
+async function deletePlan(id) {
+  if (!confirm('Delete this plan?')) return;
+  try {
+    await api(`/api/plans/${id}`, { method:'DELETE' });
+    showNotif('Plan deleted');
+    await loadPlans();
+  } catch(e) { showNotif(`⚠ ${e.message}`); }
+}
+
+async function sharePlan(id) {
+  try {
+    const res = await api(`/api/plans/${id}/share`, { method:'POST' });
+    const url = `${API_BASE}${res.share_url}`;
+    await navigator.clipboard.writeText(url).catch(()=>{});
+    showNotif(`Share link copied! ${res.share_url}`);
+  } catch(e) { showNotif(`⚠ ${e.message}`); }
+}
+
+function addPlan() {
+  if (!Auth.isLoggedIn()) { openAuthModal(); return; }
+  const f = document.getElementById('planForm');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+function scheduleRecommended() {
+  if (!Auth.isLoggedIn()) { openAuthModal(); return; }
+  document.getElementById('planForm').style.display = 'block';
+  document.getElementById('planName').value = 'Outdoor Activity';
+  document.getElementById('planLoc').value  = LOC.city;
+  const sun = new Date(); sun.setDate(sun.getDate() + (7-sun.getDay())%7 || 7);
+  document.getElementById('planDate').value = sun.toISOString().split('T')[0];
+  document.getElementById('planTime').value = '14:00';
+  showNotif('Form pre-filled with optimal window!');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SETTINGS — persist to backend
+// ════════════════════════════════════════════════════════════════
+async function saveSettings() {
+  if (!Auth.isLoggedIn()) { showNotif('Sign in to save settings'); openAuthModal(); return; }
+  const aqi_std = document.querySelector('#section-settings select:nth-of-type(1)')?.value?.split(' ')[0] || 'NAQI';
+  const temp_u  = document.querySelector('#section-settings select:nth-of-type(2)')?.value?.includes('°F') ? 'F' : 'C';
+  const thresh  = parseInt(document.querySelector('#section-settings input[type=number]')?.value || 100);
+  try {
+    Loading.show('Saving…');
+    const updated = await api('/api/auth/me', {
+      method:'PATCH',
+      body: JSON.stringify({ aqi_standard: aqi_std, temperature_unit: temp_u, aqi_alert_threshold: thresh })
+    });
+    Auth.setUser(updated);
+    showNotif('Settings saved to your account ✓');
+  } catch(e) { showNotif(`⚠ ${e.message}`); }
+  finally { Loading.hide(); }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SECTION NAV + SECTION LOADERS
+// ════════════════════════════════════════════════════════════════
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const sec = document.getElementById('section-'+id);
+  if (sec) { sec.classList.add('active'); sec.classList.remove('fade-in'); void sec.offsetWidth; sec.classList.add('fade-in'); }
+  document.querySelectorAll('.nav-link').forEach(l => { if(l.textContent.toLowerCase().includes(id.slice(0,4))) l.classList.add('active'); });
+
+  switch(id) {
+    case 'dashboard':   loadDashboard(); break;
+    case 'forecast':    loadForecastSection(); break;
+    case 'planner':     loadPlans(); break;
+    case 'suggestions': loadSuggestionsSection(); break;
+  }
+}
+
+// ── Chart tab switch ──────────────────────────────────────────
+function switchChart(type) {
+  if (!trendChartInst || !dashData) return;
+  const aqi = dashData.aqi;
+  const base = aqi ? aqi.aqi : 90;
+  const p = aqi?.pollutants || {};
+  const datasets = {
+    aqi:  Array.from({length:12},(_,i) => Math.max(5,Math.round(base-20+30*Math.sin((i-3)*Math.PI/6)))),
+    pm25: Array.from({length:12},(_,i) => Math.max(1,Math.round((p.pm25||18)-8+12*Math.sin((i-3)*Math.PI/6)))),
+    pm10: Array.from({length:12},(_,i) => Math.max(1,Math.round((p.pm10||40)-15+20*Math.sin((i-3)*Math.PI/6)))),
+    co2:  Array.from({length:12},(_,i) => Math.round(520-30*Math.sin((i-6)*Math.PI/6))),
+  };
+  trendChartInst.data.datasets[0].data = datasets[type] || datasets.aqi;
+  trendChartInst.update();
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['aqi','pm25','pm10','co2'][i]===type);
+  });
+}
+
+// ── Clock ─────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const clk = document.getElementById('clock'); const ds = document.getElementById('datestr');
+  if(clk) clk.textContent = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  if(ds)  ds.textContent  = now.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+}
+updateClock(); setInterval(updateClock, 1000);
+
+// ── Notification ──────────────────────────────────────────────
+function showNotif(msg, title='AirScope') {
+  const n = document.getElementById('notif');
+  document.getElementById('notifTitle').textContent = title;
+  document.getElementById('notifMsg').textContent   = msg;
+  n.classList.add('show');
+  setTimeout(() => n.classList.remove('show'), 3200);
+}
+
+// ── Geolocation ───────────────────────────────────────────────
+function tryGeolocate() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    LOC.set(pos.coords.latitude, pos.coords.longitude, 'Your Location');
+    showNotif('📍 Using your GPS location');
+    loadDashboard();
+  }, () => { /* use default */ });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  injectAuthModal();
+  updateAuthUI();
+
+  // Wire save settings button
+  const saveBtn = document.querySelector('#section-settings button.btn-primary');
+  if (saveBtn) saveBtn.setAttribute('onclick','saveSettings()');
+
+  // Initial data load
+  loadDashboard();
+  tryGeolocate();
+
+  // Auto-refresh every 5 minutes
+  setInterval(() => {
+    if (document.getElementById('section-dashboard').classList.contains('active')) loadDashboard();
+  }, 5 * 60 * 1000);
+});
+</script>
+</body>
+</html>
