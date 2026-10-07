@@ -1,0 +1,93 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = 'AirScope'
+        DEPLOY_DIR = '/opt/airscope'
+    }
+
+    triggers {
+        // Automatically trigger the pipeline when GitHub
+        // sends a webhook notification.
+        githubPush()
+    }
+
+    stages {
+
+        stage('Build') {
+            steps {
+                echo "Building ${APP_NAME}..."
+
+                sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                    python3 -m compileall .
+                '''
+
+                echo "${APP_NAME} build completed."
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo "Running ${APP_NAME} tests..."
+
+                sh '''
+                    . venv/bin/activate
+                    pytest tests/ -v
+                '''
+
+                echo "All tests passed."
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo "Deploying ${APP_NAME}..."
+
+                sh '''
+                    sudo mkdir -p ${DEPLOY_DIR}
+
+                    sudo cp -r *.py ${DEPLOY_DIR}/
+                    sudo cp requirements.txt ${DEPLOY_DIR}/
+
+                    sudo cp -r tests ${DEPLOY_DIR}/ 2>/dev/null || true
+
+                    echo "Deployment files copied successfully."
+                '''
+
+                echo "${APP_NAME} deployed successfully."
+            }
+        }
+    }
+
+    post {
+
+        success {
+            echo "SUCCESS: ${APP_NAME} deployment completed."
+
+            // Example post-build action
+            sh '''
+                echo "Application deployment completed successfully."
+                echo "Build: ${BUILD_NUMBER}"
+                echo "Job: ${JOB_NAME}"
+            '''
+        }
+
+        failure {
+            echo "FAILED: ${APP_NAME} pipeline failed."
+
+            // Example failure action
+            sh '''
+                echo "Deployment failed for build ${BUILD_NUMBER}."
+                echo "Check Jenkins console output for details."
+            '''
+        }
+
+        always {
+            echo "Pipeline execution finished."
+        }
+    }
+}
