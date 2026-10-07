@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AirScope — Connection Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#070b0f; --bg2:#0d1318; --surface:#141c24; --surface2:#1a2430;
+    --border:rgba(255,255,255,0.07); --accent:#00d4aa; --accent2:#00a8ff;
+    --text:#e8f0f7; --text2:#8fa3b4; --text3:#526070;
+    --good:#00d4aa; --warn:#f5c842; --bad:#ff6b35; --r:8px; --r2:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;line-height:1.7}
+  .bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:linear-gradient(rgba(0,212,170,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,170,.025) 1px,transparent 1px);
+    background-size:40px 40px}
+  .wrap{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:48px 24px 80px}
+
+  /* header */
+  .guide-header{margin-bottom:48px;border-bottom:1px solid var(--border);padding-bottom:32px}
+  .guide-header h1{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;line-height:1.1}
+  .guide-header h1 span{color:var(--accent)}
+  .guide-header p{font-size:12px;color:var(--text2);margin-top:10px}
+  .badge-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .badge{font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);color:var(--text3)}
+  .badge.green{border-color:rgba(0,212,170,.3);color:var(--accent);background:rgba(0,212,170,.08)}
+
+  /* step */
+  .step{display:flex;gap:24px;margin-bottom:40px}
+  .step-num{flex:0 0 auto;width:36px;height:36px;border-radius:50%;background:rgba(0,212,170,.12);
+    border:1px solid rgba(0,212,170,.3);display:flex;align-items:center;justify-content:center;
+    font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--accent);margin-top:3px}
+  .step-body{flex:1}
+  .step-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;margin-bottom:8px}
+  .step-desc{color:var(--text2);font-size:12px;margin-bottom:14px;line-height:1.7}
+
+  /* code block */
+  .code{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+  .code-header{background:var(--surface2);padding:8px 14px;font-size:10px;color:var(--text3);
+    display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+  .code-header span{color:var(--accent);font-size:10px;cursor:pointer}
+  .code pre{padding:16px;overflow-x:auto;font-size:12px;color:var(--text);line-height:1.6}
+  .code pre .cm{color:var(--text3)} /* comment */
+  .code pre .kw{color:var(--accent)} /* keyword */
+  .code pre .st{color:var(--warn)} /* string */
+  .code pre .nm{color:var(--accent2)} /* number/var */
+
+  /* note / warning */
+  .note{border-radius:var(--r);padding:12px 16px;font-size:11px;margin-bottom:12px;line-height:1.6}
+  .note.info{background:rgba(0,168,255,.07);border:1px solid rgba(0,168,255,.2);color:#8fc8ff}
+  .note.warn{background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.2);color:var(--warn)}
+  .note.ok  {background:rgba(0,212,170,.07);border:1px solid rgba(0,212,170,.2);color:var(--good)}
+  .note strong{font-weight:700;display:inline-block;margin-bottom:2px}
+
+  /* section divider */
+  .sec-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text3);
+    margin:40px 0 20px;display:flex;align-items:center;gap:10px}
+  .sec-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px}
+  th{text-align:left;padding:8px 12px;color:var(--text3);border-bottom:1px solid var(--border);font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+  td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.03);color:var(--text2)}
+  td:first-child{color:var(--accent);font-family:'DM Mono',monospace}
+  tr:hover td{background:var(--surface)}
+
+  /* checklist */
+  .checklist{list-style:none;display:flex;flex-direction:column;gap:8px}
+  .checklist li{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--text2)}
+  .checklist li::before{content:'☐';color:var(--accent);flex:0 0 auto;font-size:14px;line-height:1}
+  .checklist li.done::before{content:'✓';color:var(--good)}
+
+  /* arch diagram */
+  .arch{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px;margin-bottom:16px}
+  .arch-row{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap}
+  .arch-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
+    padding:12px 18px;text-align:center;min-width:110px}
+  .arch-box .ab-icon{font-size:22px;margin-bottom:4px}
+  .arch-box .ab-label{font-size:10px;font-family:'Syne',sans-serif;font-weight:700;color:var(--text)}
+  .arch-box .ab-sub{font-size:9px;color:var(--text3);margin-top:2px}
+  .arch-box.accent{border-color:rgba(0,212,170,.4);background:rgba(0,212,170,.05)}
+  .arch-arrow{color:var(--text3);font-size:18px;padding:0 8px;flex:0 0 auto}
+
+  .url-pill{display:inline-block;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.25);
+    border-radius:4px;padding:2px 8px;font-size:11px;color:var(--accent);font-family:'DM Mono',monospace}
+
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="wrap">
+
+<!-- HEADER -->
+<div class="guide-header">
+  <h1>Air<span>Scope</span><br>Connection Guide</h1>
+  <p>Complete walkthrough: connect frontend → backend → live database in one session</p>
+  <div class="badge-row">
+    <span class="badge green">Python 3.11+</span>
+    <span class="badge green">FastAPI</span>
+    <span class="badge green">SQLite → PostgreSQL</span>
+    <span class="badge green">WAQI API</span>
+    <span class="badge green">OpenWeatherMap</span>
+    <span class="badge">~15 min setup</span>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<div class="sec-label">Architecture Overview</div>
+<div class="arch">
+  <div class="arch-row">
+    <div class="arch-box accent">
+      <div class="ab-icon">🌐</div>
+      <div class="ab-label">Frontend</div>
+      <div class="ab-sub">airscope-connected.html</div>
+    </div>
+    <div class="arch-arrow">⟷</div>
+    <div class="arch-box accent">
+      <div class="ab-icon">⚡</div>
+      <div class="ab-label">FastAPI Backend</div>
+      <div class="ab-sub">localhost:8000</div>
+    </div>
+    <div class="arch-arrow">⟷</div>
+    <div class="arch-box">
+      <div class="ab-icon">🗄</div>
+      <div class="ab-label">SQLite DB</div>
+      <div class="ab-sub">airscope.db</div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:16px;display:flex;gap:24px;justify-content:center">
+    <div class="arch-arrow" style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="font-size:10px;color:var(--text3)">calls</span>
+    </div>
+  </div>
+  <div class="arch-row" style="margin-top:16px">
+    <div class="arch-box">
+      <div class="ab-icon">🌫</div>
+      <div class="ab-label">WAQI API</div>
+      <div class="ab-sub">Live AQI data</div>
+    </div>
+    <div class="arch-arrow" style="color:transparent">→</div>
+    <div class="arch-box accent">
+      <div class="ab-icon">⚡</div>
+      <div class="ab-label">FastAPI Backend</div>
+      <div class="ab-sub">caches + serves</div>
+    </div>
+    <div class="arch-arrow" style="color:transparent">→</div>
+    <div class="arch-box">
+      <div class="ab-icon">🌤</div>
+      <div class="ab-label">OpenWeatherMap</div>
+      <div class="ab-sub">Live weather</div>
+    </div>
+  </div>
+</div>
+
+<div class="note info">
+  <strong>Demo mode available</strong> — You can skip API keys entirely to start.
+  The backend runs with realistic mock data when keys are set to <code>"demo"</code>.
+  Add real keys any time to switch to live data.
+</div>
+
+<!-- STEPS -->
+<div class="sec-label">Step-by-Step Setup</div>
+
+<!-- STEP 1 -->
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <div class="step-title">Extract the backend</div>
+    <div class="step-desc">Unzip the backend package you downloaded. Open a terminal inside the folder.</div>
+    <div class="code">
+      <div class="code-header">bash <span onclick="navigator.clipboard.writeText(this.closest('.code').querySelector('pre').innerText)">copy</span></div>
+      <pre><span class="cm"># Unzip (or use your file manager)</span>
+unzip airscope-backend.zip
+cd airscope-backend</pre>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 2 -->
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <div class="step-title">Create a Python virtual environment</div>
+    <div class="step-desc">Keeps your project dependencies isolated. Works on Windows, Mac and Linux.</div>
+    <div class="code">
+      <div class="code-header">bash — Mac / Linux <span onclick="navigator.clipboard.writeText(this.closest('.code').querySelector('pre').innerText)">copy</span></div>
+      <pre>python3 -m venv venv
+source venv/bin/activate</pre>
+    </div>
+    <div class="code">
+      <div class="code-header">bash — Windows (PowerShell) <span onclick="navigator.clipboard.writeText(this.closest('.code').querySelector('pre').innerText)">copy</span></div>
+      <pre>python -m venv venv
+venv\Scripts\Activate.ps1</pre>
+    </div>
+    <div class="note info">You'll see <code>(venv)</code> appear at the start of your terminal prompt — that means it worked.</div>
+  </div>
+</div>
+
+<!-- STEP 3 -->
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <div class="step-title">Install all dependencies</div>
+    <div class="step-desc">This installs FastAPI, SQLAlchemy, scikit-learn, httpx, and all other packages listed in <code>requirements.txt</code>.</div>
+    <div class="code">
+      <div class="code-header">bash <span onclick="navigator.clipboard.writeText(this.closest('.code').querySelector('pre').innerText)">copy</span></div>
+      <pre>pip install -r requirements.txt</pre>
+    </div>
+    <div class="note warn"><strong>Takes 1–3 minutes</strong> on first run — scikit-learn and numpy are large. Subsequent runs are instant.</div>
+  </div>
+</div>
+
+<!-- STEP 4 -->
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <div class="step-title">Configure environment variables</div>
+    <div class="step-desc">Copy the example file and fill in your values. At minimum, only <code>SECRET_KEY</code> is required — everything else has safe defaults.</div>
+    <div class="code">
+      <div class="code-header">bash <span onclick="navigator.clipboard.writeText(this.closest('.code').querySelector('pre').innerText)">copy</span></div>
+      <pre><span class="cm"># Mac / Linux</span>
+cp .env.example .env
+
+<span class="cm"># Windows</span>
+copy .env.example .env</pre>
+    </div>
+    <div class="code">
+      <div class="code-header">.env — edit this file <span onclick="navigator.clipboard.writeText(this.closest('.code').querySelector('pre').innerText)">copy</span></div>
+      <pre><span class="cm"># ── API Keys ────────────────────────────────────────────
+# Leave as "demo" to use mock data (no account needed)
+# Or add real keys for live AQI + weather</span>
+<span class="nm">OPENWEATHER_API_KEY</span>=demo
+<span class="nm">WAQI_API_KEY</span>=demo
+
+<span class="cm"># ── REQUIRED: change this to any long random string ──</span>
+<span class="nm">SECRET_KEY</span>=<span class="st">my-super-secret-airscope-key-change-this-in-production</span>
+
+<span class="cm"># ── Database (SQLite is zero-config, no install needed) ──</span>
+<span class="nm">DATABASE_URL</span>=sqlite+aiosqlite:///./airscope.db
+
+<span class="cm"># ── App ──────────────────────────────────────────────────</span>
+<span class="nm">APP_ENV</span>=development
+<span class="nm">ALLOWED_ORIGINS</span>=http://localhost:3000,http://localhost:5500,http://127.0.0.1:5500,null</pre>
+    </div>
+    <div class="note warn">
+      <strong>ALLOWED_ORIGINS</strong> — the value <code>null</code> is needed when opening the HTML file directly
+      from your filesystem (file://). If you serve it via VS Code Live Server (port 5500) or similar, include that origin too.
+    </div>
+  </div>
+</div>
+
+<!-- STEP 4b: API keys -->
+<div class="step">
+  <div class="step-num">4b</div>
+  <div class="step-body">
+    <div class="step-title">Get free API keys <em style="font-size:12px;color:var(--text3)">(optional — skip for demo mode)</em></div>
+    <div class="step-desc">Both services have free tiers that cover normal usage. Takes about 2 minutes each.</div>
+    <table>
+      <tr><th>Service</th><th>Free tier</th><th>URL</th><th>Key name in .env</th></tr>
+      <tr>
+        <td>WAQI</td>
+        <td>1,000 req/day</td>
+        <td><a href="https://aqicn.org/data-platform/token/" target="_blank">aqicn.org/data-platform/token</a></td>
+        <td>WAQI_API_KEY</td>
+      </tr>
+      <tr>
+        <td>OpenWeatherMap</td>
+        <td>1,000 req/day</td>
+        <td><a href="https://openweathermap.org/api" target="_blank">openweathermap.org/api</a></td>
+        <td>OPENWEATHER_API_KEY</td>
+      </tr>
+    </table>
+    <div class="note info">
+      <strong>WAQI key</strong> — Click the link, enter your email, and your token arrives instantly.
+      <br><strong>OpenWeatherMap</strong> — Create a free account, go to "API keys" in your profile, and copy the default key.
+      It activates within 10 minutes of account creation.
+    </div>
+  </div>
+</div>
+
+<!-- STEP 5 -->
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-body">
+    <div class="step-title">Start the backend server</div>
+    <div class="step-desc">This creates the SQLite database automatically on first run (no setup required), trains the forecast ML model, and starts the scheduler that refreshes AQI data every 15 minutes.</div>
+    <div class="code">
+      <div class="code-header">bash — from inside the airscope-backend folder <span onclick="navigator.clipboard.writeText(this.closest('.code').querySelector('pre').innerText)">copy</span></div>
+      <pre>python -m app.main</pre>
+    </div>
+    <div class="note ok">
+      <strong>You should see:</strong><br>
+      🚀 AirScope API starting up…<br>
+      ✅ Database initialised<br>
+      [Forecast] Model trained on synthetic data.<br>
+      [Scheduler] Started — AQI refresh every 15 minutes<br>
+      INFO: Uvicorn running on <span class="url-pill">http://0.0.0.0:8000</span>
+    </div>
+    <div class="code">
+      <div class="code-header">Alternative: with auto-reload (development) <span onclick="navigator.clipboard.writeText(this.closest('.code').querySelector('pre').innerText)">copy</span></div>
+      <pre>uvicorn app.main:app --reload --host 0.0.0.0 --port 8000</pre>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 6 -->
+<div class="step">
+  <div class="step-num">6</div>
+  <div class="step-body">
+    <div class="step-title">Verify the backend is running</div>
+    <div class="step-desc">Open these URLs in your browser to confirm everything is working.</div>
+    <table>
+      <tr><th>URL</th><th>Expected response</th></tr>
+      <tr><td><a href="http://localhost:8000" target="_blank">localhost:8000</a></td><td>{"name":"AirScope API","version":"1.0.0",...}</td></tr>
+      <tr><td><a href="http://localhost:8000/health" target="_blank">localhost:8000/health</a></td><td>{"status":"ok","demo_mode":true}</td></tr>
+      <tr><td><a href="http://localhost:8000/docs" target="_blank">localhost:8000/docs</a></td><td>Interactive Swagger UI with all endpoints</td></tr>
+      <tr><td><a href="http://localhost:8000/api/aqi/city?city=Delhi" target="_blank">localhost:8000/api/aqi/city?city=Delhi</a></td><td>JSON with AQI, pollutants, category</td></tr>
+      <tr><td><a href="http://localhost:8000/api/dashboard?lat=28.43&lon=77.0&city=Sohna" target="_blank">localhost:8000/api/dashboard?lat=28.43&lon=77.0</a></td><td>Full dashboard payload</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- STEP 7 -->
+<div class="step">
+  <div class="step-num">7</div>
+  <div class="step-body">
+    <div class="step-title">Open the connected frontend</div>
+    <div class="step-desc">Open <code>airscope-connected.html</code> directly in your browser. The frontend will automatically connect to the backend at <code>localhost:8000</code> and load live data.</div>
+    <div class="note info">
+      <strong>Quickest method</strong> — Double-click <code>airscope-connected.html</code> in your file manager.
+      It opens at a <code>file://</code> path which works fine.
+    </div>
+    <div class="note ok">
+      <strong>Better method</strong> — Use VS Code with the Live Server extension (right-click → "Open with Live Server").
+      This gives you <code>http://localhost:5500</code> and hot-reload on save.
+      Make sure <code>http://localhost:5500</code> is in <code>ALLOWED_ORIGINS</code> in your .env.
+    </div>
+
+    <div class="step-desc" style="margin-top:12px">The frontend connects to the API via this line at the top of the script block. Change it if your backend runs on a different host/port:</div>
+    <div class="code">
+      <div class="code-header">airscope-connected.html — line ~1244 <span onclick="navigator.clipboard.writeText(this.closest('.code').querySelector('pre').innerText)">copy</span></div>
+      <pre><span class="kw">const</span> <span class="nm">API_BASE</span> = <span class="st">'http://localhost:8000'</span>;</pre>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 8 -->
+<div class="step">
+  <div class="step-num">8</div>
+  <div class="step-body">
+    <div class="step-title">Register your first account</div>
+    <div class="step-desc">Click <strong>Register</strong> in the top-right of the frontend. This creates a user in the SQLite database. After registering, plans, locations and settings are all synced to your account.</div>
+    <div class="code">
+      <div class="code-header">Or register directly via the API</div>
+      <pre>curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "you@example.com",
+    "username": "yourname",
+    "password": "password123",
+    "full_name": "Your Name"
+  }'</pre>
+    </div>
+    <div class="note ok">
+      <strong>What gets stored in the database (airscope.db):</strong><br>
+      • User account + bcrypt-hashed password<br>
+      • Health profile (asthma, athlete mode, etc.)<br>
+      • Saved locations (Home, Office, etc.)<br>
+      • Plans with AQI forecast snapshots at time of creation<br>
+      • AQI historical readings (refreshed every 15 min by scheduler)
+    </div>
+  </div>
+</div>
+
+<!-- DATABASE SECTION -->
+<div class="sec-label">Database Details</div>
+
+<div class="step">
+  <div class="step-num">DB</div>
+  <div class="step-body">
+    <div class="step-title">Inspecting the SQLite database</div>
+    <div class="step-desc">The database file <code>airscope.db</code> is created in the backend folder on first run. You can inspect it with any SQLite tool.</div>
+    <div class="code">
+      <div class="code-header">Install DB Browser for SQLite (GUI — recommended)</div>
+      <pre><span class="cm"># Mac</span>
+brew install --cask db-browser-for-sqlite
+
+<span class="cm"># Windows — download from</span>
+<span class="cm"># https://sqlitebrowser.org/dl/</span>
+
+<span class="cm"># Ubuntu / Debian</span>
+sudo apt install sqlitebrowser</pre>
+    </div>
+    <div class="code">
+      <div class="code-header">Or use the command line</div>
+      <pre><span class="cm"># Open the database</span>
+sqlite3 airscope.db
+
+<span class="cm"># View all tables</span>
+.tables
+
+<span class="cm"># See table structure</span>
+.schema users
+
+<span class="cm"># Query users</span>
+SELECT id, email, username, created_at FROM users;
+
+<span class="cm"># Query plans</span>
+SELECT title, activity_type, scheduled_at, risk_level FROM plans;
+
+<span class="cm"># Query AQI history</span>
+SELECT city, aqi, pm25, recorded_at FROM aqi_cache ORDER BY recorded_at DESC LIMIT 20;
+
+<span class="cm"># Exit</span>
+.quit</pre>
+    </div>
+
+    <table style="margin-top:8px">
+      <tr><th>Table</th><th>Contents</th><th>Auto-populated?</th></tr>
+      <tr><td>users</td><td>Accounts, passwords (bcrypt), health profile, notification settings</td><td>On register</td></tr>
+      <tr><td>saved_locations</td><td>Home, Office, custom locations per user</td><td>Via frontend</td></tr>
+      <tr><td>plans</td><td>Scheduled activities with AQI snapshots and risk level</td><td>Via frontend</td></tr>
+      <tr><td>aqi_cache</td><td>Historical AQI readings for 8 tracked cities</td><td>Every 15 min (scheduler)</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- UPGRADE TO POSTGRES -->
+<div class="step">
+  <div class="step-num">PG</div>
+  <div class="step-body">
+    <div class="step-title">Upgrading to PostgreSQL <em style="font-size:12px;color:var(--text3)">(production)</em></div>
+    <div class="step-desc">SQLite is perfect for development and single-user deployments. Switch to PostgreSQL for multi-user production use.</div>
+    <div class="code">
+      <div class="code-header">1. Install PostgreSQL and create the database</div>
+      <pre><span class="cm"># Mac</span>
+brew install postgresql@16
+brew services start postgresql@16
+createdb airscope_db
+
+<span class="cm"># Ubuntu / Debian</span>
+sudo apt install postgresql
+sudo -u postgres createdb airscope_db
+sudo -u postgres psql -c "CREATE USER airscope WITH PASSWORD 'yourpassword';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE airscope_db TO airscope;"</pre>
+    </div>
+    <div class="code">
+      <div class="code-header">2. Install the async PostgreSQL driver</div>
+      <pre>pip install asyncpg psycopg2-binary</pre>
+    </div>
+    <div class="code">
+      <div class="code-header">3. Update DATABASE_URL in .env</div>
+      <pre><span class="cm"># Replace the SQLite line with:</span>
+<span class="nm">DATABASE_URL</span>=postgresql+asyncpg://airscope:yourpassword@localhost:5432/airscope_db</pre>
+    </div>
+    <div class="code">
+      <div class="code-header">4. Restart the backend — tables are created automatically</div>
+      <pre>python -m app.main</pre>
+    </div>
+    <div class="note ok"><strong>That's it.</strong> SQLAlchemy handles the rest — all queries, schemas and relationships work identically with PostgreSQL.</div>
+  </div>
+</div>
+
+<!-- CORS TROUBLESHOOTING -->
+<div class="sec-label">Troubleshooting</div>
+
+<div class="step">
+  <div class="step-num">!</div>
+  <div class="step-body">
+    <div class="step-title">Common issues & fixes</div>
+
+    <div class="note warn" style="margin-bottom:12px">
+      <strong>❌ CORS error in browser console</strong><br>
+      Add your frontend's origin to <code>ALLOWED_ORIGINS</code> in <code>.env</code>.<br>
+      Common values: <code>http://localhost:5500</code>, <code>http://127.0.0.1:5500</code>, <code>null</code> (for file://).<br>
+      Restart the backend after changing .env.
+    </div>
+
+    <div class="note warn" style="margin-bottom:12px">
+      <strong>❌ "Cannot reach backend" in the UI</strong><br>
+      Check that the backend is running (<code>python -m app.main</code>).<br>
+      Confirm <code>API_BASE</code> in <code>airscope-connected.html</code> matches the backend URL.<br>
+      Default: <code>http://localhost:8000</code>
+    </div>
+
+    <div class="note warn" style="margin-bottom:12px">
+      <strong>❌ OpenWeatherMap returns 401</strong><br>
+      New OWM keys take up to 10 minutes to activate after account creation.<br>
+      Leave <code>OPENWEATHER_API_KEY=demo</code> for now and swap in the key after activation.
+    </div>
+
+    <div class="note warn" style="margin-bottom:12px">
+      <strong>❌ Plans require sign-in</strong><br>
+      This is by design — plans are stored per-user in the database.<br>
+      Click "Sign In / Register" in the Planner section or the top-right nav button.
+    </div>
+
+    <div class="note warn">
+      <strong>❌ Port 8000 already in use</strong><br>
+      Change the port: <code>uvicorn app.main:app --port 8001</code><br>
+      Then update <code>API_BASE</code> in the frontend to <code>http://localhost:8001</code>.
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCTION CHECKLIST -->
+<div class="sec-label">Production Deployment Checklist</div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:24px;margin-bottom:24px">
+  <ul class="checklist">
+    <li>Replace <code>SECRET_KEY</code> in .env with a 64-character random string</li>
+    <li>Add real <code>WAQI_API_KEY</code> and <code>OPENWEATHER_API_KEY</code></li>
+    <li>Switch <code>DATABASE_URL</code> to PostgreSQL</li>
+    <li>Set <code>ALLOWED_ORIGINS</code> to your actual frontend domain only</li>
+    <li>Set <code>APP_ENV=production</code></li>
+    <li>Run behind NGINX as a reverse proxy</li>
+    <li>Add HTTPS/TLS certificate (Let's Encrypt)</li>
+    <li>Set up process manager: <code>pm2</code> or <code>systemd</code></li>
+    <li>Replace in-memory cache with Redis (<code>aioredis</code>) for multi-worker deployments</li>
+    <li>Set up database backups (automated daily dumps)</li>
+  </ul>
+</div>
+
+<!-- QUICK REF -->
+<div class="sec-label">Quick Reference</div>
+<table>
+  <tr><th>What</th><th>Where</th></tr>
+  <tr><td>Backend URL</td><td>http://localhost:8000</td></tr>
+  <tr><td>API docs (Swagger)</td><td>http://localhost:8000/docs</td></tr>
+  <tr><td>API docs (ReDoc)</td><td>http://localhost:8000/redoc</td></tr>
+  <tr><td>Health check</td><td>http://localhost:8000/health</td></tr>
+  <tr><td>Database file</td><td>airscope-backend/airscope.db</td></tr>
+  <tr><td>Environment config</td><td>airscope-backend/.env</td></tr>
+  <tr><td>Frontend config line</td><td>airscope-connected.html → const API_BASE = '...'</td></tr>
+  <tr><td>CORS origins config</td><td>.env → ALLOWED_ORIGINS</td></tr>
+  <tr><td>Forecast model</td><td>app/ml/forecast.py</td></tr>
+  <tr><td>AQI service</td><td>app/services/aqi_service.py</td></tr>
+</table>
+
+<div class="note ok" style="margin-top:24px">
+  <strong>You're all set.</strong> The full stack is now running:
+  frontend ↔ FastAPI ↔ SQLite ↔ WAQI/OpenWeatherMap.
+  Open <code>airscope-connected.html</code>, register an account, and all your data persists in the database.
+</div>
+
+</div><!-- /wrap -->
+</body>
+</html>
